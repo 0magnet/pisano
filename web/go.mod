@@ -8,13 +8,13 @@ require (
 	github.com/0magnet/afero v1.15.1-0.20260810212219-f42b8e681b6d
 	github.com/0magnet/pisano v0.0.0-00010101000000-000000000000
 	github.com/0magnet/sh/v3 v3.13.2-0.20260814172914-eff537668adf
-	github.com/0magnet/websh v0.0.0-20260814200825-aa61e5a0e6b4
-	github.com/0magnet/xterm-go v0.0.0-20260810205834-539654a1b7a3
+	github.com/0magnet/websh v0.0.0-20260816205508-7dce73170d0e
 )
 
 require (
 	charm.land/bubbletea/v2 v2.0.8 // indirect
 	github.com/0magnet/u-root v0.16.1-0.20260810212217-0890fe5099f9 // indirect
+	github.com/0magnet/xterm-go v0.0.0-20260816193539-5beca79629c0 // indirect
 	github.com/benhoyt/goawk v1.31.0 // indirect
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
 	github.com/charmbracelet/ultraviolet v0.0.0-20260703014108-f5a850f9c2b7 // indirect

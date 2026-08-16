@@ -302,6 +302,8 @@ $ go run . sweep --max 60 --dupes
 
 The same designs, driven from a shell, compiled to WebAssembly:
 **[0magnet.github.io/pisano/term/](https://0magnet.github.io/pisano/term/)**
+(TinyGo; the [standard Go build](https://0magnet.github.io/pisano/term/go/) is
+linked from the page header)
 
 ```
 pisano:~$ pisano tui                                 the viewer, full screen
@@ -336,9 +338,16 @@ lets it compile for js/wasm at all, since Bubble Tea has no port there.
 Building it:
 
 ```
-web/build.sh          # TinyGo   -> docs/term        3.5 MB
-web/build.sh go       # Go       -> docs/term/go      13 MB
+web/build.sh          # both     -> docs/term and docs/term/go
+web/build.sh tinygo   # TinyGo only                   3.5 MB
+web/build.sh go       # standard Go only               13 MB
 ```
+
+Both are carried and the page header links between them. TinyGo is the default
+because it is a quarter the size and is fetched before anything appears; the
+standard Go build is there because TinyGo occasionally miscompiles something,
+and having the other one a click away is how you find out that is what
+happened.
 
 `web/` is a separate module. Keeping it out of the root one means the CLI's
 dependencies stay at cobra and Bubble Tea, rather than dragging in a terminal

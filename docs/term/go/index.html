@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 1h4v5h5v4h-5v5H6v-5H1V6h5z' fill='none' stroke='%238fc6f0' stroke-width='1.6'/%3E%3C/svg%3E">
+<title>pisano — Pisano period designs in a shell</title>
+<style>
+  /* The terminal fills whatever the header leaves. Reserving a fixed number of
+     pixels for the header is wrong the moment it wraps, which it does on a
+     narrow window — and the overflow shows up as a scrollbar over a program
+     that is supposed to own the screen. */
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+  body { display: flex; flex-direction: column; }
+  header {
+    flex: 0 0 auto;
+    color: #d3d7cf; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 13px; padding: 7px 12px; background: #111;
+    border-bottom: 1px solid #2e3436; line-height: 1.6;
+  }
+  header a { color: #729fcf; }
+  header b { color: #ad7fa8; }
+  header code { color: #8ae234; }
+  #terminal { flex: 1 1 auto; min-height: 0; background: #000; }
+  /* The terminal's scrollbar is the light strip down the right-hand side. It
+     is the browser's default chrome inside a black program, so it has to be
+     told otherwise; the remaining sliver is the part of a character cell that
+     did not fit, and is only invisible because what is behind it is also
+     black. */
+  #terminal, #terminal * { scrollbar-width: thin; scrollbar-color: #2e3436 #000; }
+  #terminal *::-webkit-scrollbar { width: 10px; height: 10px; }
+  #terminal *::-webkit-scrollbar-track { background: #000; }
+  #terminal *::-webkit-scrollbar-thumb { background: #2e3436; border-radius: 5px; }
+  #terminal *::-webkit-scrollbar-thumb:hover { background: #555d65; }
+  #terminal *::-webkit-scrollbar-corner { background: #000; }
+  #boot { padding: 12px; color: #666;
+          font-family: ui-monospace, monospace; font-size: 13px; }
+</style>
+</head>
+<body>
+<header>
+  <b>pisano</b> — Pisano period designs, in a shell, in your browser ·
+  <a href="https://github.com/0magnet/pisano">pisano</a> +
+  <a href="https://github.com/0magnet/websh">websh</a>
+  &nbsp;·&nbsp; try <code>pisano tui</code>
+  &nbsp;·&nbsp; standard Go build — <a href="../">TinyGo build</a>
+  &nbsp;·&nbsp; <a href="../../">static gallery</a>
+</header>
+<div id="boot">loading…</div>
+<div id="terminal"></div>
+<script src="wasm_exec.js"></script>
+<script>
+  const go = new Go();
+  const boot = document.getElementById("boot");
+  WebAssembly.instantiateStreaming(fetch("pisano.wasm"), go.importObject)
+    .then((result) => { boot.remove(); return go.run(result.instance); })
+    .catch((err) => { boot.textContent = "failed to load: " + err; });
+</script>
+</body>
+</html>

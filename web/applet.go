@@ -26,7 +26,7 @@ import (
 // it has to mean the shell's virtual filesystem, so that a design generated in
 // the browser can be handed to websh's own `download` applet. Everything the
 // commands actually do is the same package either way.
-func registerPisano(sh *shell.Shell) {
+func registerPisano() {
 	shell.RegisterApplet("pisano", "Pisano period designs (try: pisano tui)",
 		func(ctx context.Context, s *shell.Shell, hc *interp.HandlerContext, args []string) int {
 			return runPisano(ctx, s, hc, args)

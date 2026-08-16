@@ -6,10 +6,10 @@ github.com/0magnet/sh/v3 v3.13.2-0.20260814172914-eff537668adf h1:3tImGgrBxM3/eC
 github.com/0magnet/sh/v3 v3.13.2-0.20260814172914-eff537668adf/go.mod h1:IdyC3iqIKArn4KOl0a58dV2spH0PH6pLJKOZYB2kFR0=
 github.com/0magnet/u-root v0.16.1-0.20260810212217-0890fe5099f9 h1:akt/1o/SlArz8M/n+piy0eyKaBa83wrxQmrLgh6FlPU=
 github.com/0magnet/u-root v0.16.1-0.20260810212217-0890fe5099f9/go.mod h1:fId14v+rNp1A0ZKHJPZZyiu9dfgWKEs7nbyvKrku3bo=
-github.com/0magnet/websh v0.0.0-20260814200825-aa61e5a0e6b4 h1:XSD3Y7E22+frk4wzbt0OllQYsqxnvYKEh2mZ5uUnVcw=
-github.com/0magnet/websh v0.0.0-20260814200825-aa61e5a0e6b4/go.mod h1:tjTRlsGsQhuij9w3yH+VEjD9bpx+FuYDHxeVN+w12yw=
-github.com/0magnet/xterm-go v0.0.0-20260810205834-539654a1b7a3 h1:E+HiftyW5JqQadAaWu9kyaMgT72Uzd7dm7yQufnFRV4=
-github.com/0magnet/xterm-go v0.0.0-20260810205834-539654a1b7a3/go.mod h1:W6c6ofSTsxXuQEr1rSZ3qmfOj5a3LGB3uLQBL0/TiKc=
+github.com/0magnet/websh v0.0.0-20260816205508-7dce73170d0e h1:A/bXxBCzA+qO9xjZIF0Wa9EARQkBIvguvjgzE1jfy9U=
+github.com/0magnet/websh v0.0.0-20260816205508-7dce73170d0e/go.mod h1:ziOzkV+FQYYYC4ivM/F2FwvuloQpljwetB5nyS4ElLI=
+github.com/0magnet/xterm-go v0.0.0-20260816193539-5beca79629c0 h1:vKuI1woBzCSkJiopdq6dgKAIEH8U2oJVpMh3AAI9/zk=
+github.com/0magnet/xterm-go v0.0.0-20260816193539-5beca79629c0/go.mod h1:W6c6ofSTsxXuQEr1rSZ3qmfOj5a3LGB3uLQBL0/TiKc=
 github.com/aymanbagabas/go-udiff v0.2.0 h1:TK0fH4MteXUDspT88n8CKzvK0X9O2xu9yQjWpi6yML8=
 github.com/aymanbagabas/go-udiff v0.2.0/go.mod h1:RE4Ex0qsGkTAJoQdQQCA0uG+nAzJO/pI/QwceO5fgrA=
 github.com/benhoyt/goawk v1.31.0 h1:TSdLys1rAWvmb3befdmLYpaHZbTrYtS+JkBWRcNsMNM=
