@@ -5,7 +5,7 @@ go 1.26
 replace github.com/0magnet/pisano => ../
 
 require (
-	github.com/0magnet/afero v1.15.1-0.20260810212219-f42b8e681b6d
+	github.com/0magnet/desk v0.0.0-20260816213939-3980c59b72fd
 	github.com/0magnet/pisano v0.0.0-00010101000000-000000000000
 	github.com/0magnet/sh/v3 v3.13.2-0.20260814172914-eff537668adf
 	github.com/0magnet/websh v0.0.0-20260816205508-7dce73170d0e
@@ -13,7 +13,9 @@ require (
 
 require (
 	charm.land/bubbletea/v2 v2.0.8 // indirect
+	github.com/0magnet/afero v1.15.1-0.20260810212219-f42b8e681b6d // indirect
 	github.com/0magnet/u-root v0.16.1-0.20260810212217-0890fe5099f9 // indirect
+	github.com/0magnet/winbox-go v0.0.0-20260814185914-0cf1e25d3334 // indirect
 	github.com/0magnet/xterm-go v0.0.0-20260816193539-5beca79629c0 // indirect
 	github.com/benhoyt/goawk v1.31.0 // indirect
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect

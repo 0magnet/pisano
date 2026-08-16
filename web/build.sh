@@ -1,9 +1,9 @@
 #!/bin/sh
-# Build the browser version into ../docs/term, which is what GitHub Pages serves.
+# Build the browser version into ../docs/desk, which is what GitHub Pages serves.
 #
-# Both toolchains are carried: TinyGo at docs/term/ because it is a quarter the
+# Both toolchains are carried: TinyGo at docs/desk/ because it is a quarter the
 # size and is fetched before anything appears, and the standard Go build at
-# docs/term/go/ because TinyGo occasionally miscompiles something and having the
+# docs/desk/go/ because TinyGo occasionally miscompiles something and having the
 # other one a click away is how you find out that is what happened. The two
 # pages link to each other.
 #
@@ -13,17 +13,17 @@
 set -eu
 
 cd "$(dirname "$0")"
-out=../docs/term
+out=../docs/desk
 
 build_tinygo() {
 	mkdir -p "$out"
-	tinygo build -o "$out/pisano.wasm" -target wasm -no-debug .
+	tinygo build -o "$out/pisano-desk.wasm" -target wasm -no-debug ./desk
 	cp "$(tinygo env TINYGOROOT)/targets/wasm_exec.js" "$out/wasm_exec.js"
 }
 
 build_go() {
 	mkdir -p "$out/go"
-	GOOS=js GOARCH=wasm go build -o "$out/go/pisano.wasm" .
+	GOOS=js GOARCH=wasm go build -o "$out/go/pisano-desk.wasm" ./desk
 	cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" "$out/go/wasm_exec.js"
 }
 

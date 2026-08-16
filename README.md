@@ -335,6 +335,22 @@ Four calls, one model, one set of tests covering both. `pkg/tui` has no
 dependency on Bubble Tea except in that one build-tagged file — which is what
 lets it compile for js/wasm at all, since Bubble Tea has no port there.
 
+### On a desktop
+
+**[0magnet.github.io/pisano/desk/](https://0magnet.github.io/pisano/desk/)** puts
+the same shell in a window, on [desk](https://github.com/0magnet/desk), so a
+design can be generated in one window and opened in another:
+
+```
+pisano circle --mod 8,13,21,34 --cols 4 -o sheet.svg && view sheet.svg
+```
+
+There is no message passing behind that. Both windows are panes in one binary
+over one filesystem, so writing the file *is* the hand-off and `view` only has
+to name it. The dependency points pisano → desk; desk knows nothing about
+pisano, which is why the command lives in `web/app` and both binaries register
+it.
+
 Building it:
 
 ```
