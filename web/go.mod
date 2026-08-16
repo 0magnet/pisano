@@ -5,6 +5,8 @@ go 1.26
 replace github.com/0magnet/pisano => ../
 
 require (
+	charm.land/bubbletea/v2 v2.0.8
+	github.com/0magnet/afero v1.15.1-0.20260810212219-f42b8e681b6d
 	github.com/0magnet/desk v0.0.0-20260816223435-0ecc3022e821
 	github.com/0magnet/pisano v0.0.0-00010101000000-000000000000
 	github.com/0magnet/sh/v3 v3.13.2-0.20260814172914-eff537668adf
@@ -12,8 +14,6 @@ require (
 )
 
 require (
-	charm.land/bubbletea/v2 v2.0.8 // indirect
-	github.com/0magnet/afero v1.15.1-0.20260810212219-f42b8e681b6d // indirect
 	github.com/0magnet/u-root v0.16.1-0.20260810212217-0890fe5099f9 // indirect
 	github.com/0magnet/winbox-go v0.0.0-20260814185914-0cf1e25d3334 // indirect
 	github.com/0magnet/xterm-go v0.0.0-20260816193539-5beca79629c0 // indirect
@@ -27,15 +27,24 @@ require (
 	github.com/clipperhouse/displaywidth v0.11.0 // indirect
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
+	github.com/fatih/color v1.13.0 // indirect
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/itchyny/gojq v0.12.19 // indirect
 	github.com/itchyny/timefmt-go v0.1.8 // indirect
+	github.com/ivanpirog/coloredcobra v1.0.1 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.0 // indirect
+	github.com/mattn/go-colorable v0.1.9 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.23 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
+	github.com/spf13/cobra v1.10.2 // indirect
+	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/term v0.45.0 // indirect
 	golang.org/x/text v0.41.0 // indirect
 )
+
+replace charm.land/bubbletea/v2 => github.com/0magnet/bubbletea/v2 v2.0.9-0.20260816230205-5aaf8ac0d36c

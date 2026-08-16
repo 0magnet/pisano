@@ -4,9 +4,9 @@
 // both. It's been battle-tested in several large projects and is
 // production-ready.
 //
-// A tutorial is available at https://github.com/charmbracelet/bubbletea/tree/master/tutorials
+// A tutorial is available at https://github.com/charmbracelet/bubbletea/tree/main/tutorials
 //
-// Example programs can be found at https://github.com/charmbracelet/bubbletea/tree/master/examples
+// Example programs can be found at https://github.com/charmbracelet/bubbletea/tree/main/examples
 package tea
 
 import (
@@ -336,7 +336,7 @@ func (s ProgressBarState) String() string {
 type ProgressBar struct {
 	// State is the current state of the progress bar. It can be one of
 	// [ProgressBarNone], [ProgressBarDefault], [ProgressBarError],
-	// [ProgressBarIndeterminate], and [ProgressBarWarn].
+	// [ProgressBarIndeterminate], and [ProgressBarWarning].
 	State ProgressBarState
 	// Value is the current value of the progress bar. It should be between
 	// 0 and 100.

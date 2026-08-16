@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -77,8 +78,12 @@ same reason.`,
 	cmd.Flags().BoolVar(&paused, "paused", false, "start paused")
 	cmd.Flags().DurationVar(&cycle, "cycle", 0, "step to the next modulus this often, e.g. 5s")
 
-	cmd.RunE = func(_ *cobra.Command, _ []string) error {
-		return tui.Run(tui.Options{
+	cmd.RunE = func(cc *cobra.Command, _ []string) error {
+		h := hostFrom(cc.Context())
+		if h.RunViewer == nil {
+			return fmt.Errorf("tui: this host cannot open a full-screen viewer")
+		}
+		return h.RunViewer(tui.Options{
 			Seq:    seq,
 			Mul:    mul,
 			Mod:    mod,

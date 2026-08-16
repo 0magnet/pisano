@@ -2,7 +2,7 @@ package commands
 
 import (
 	"fmt"
-	"os"
+	"io"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -105,17 +105,18 @@ func parseRange(s string) ([]int, error) {
 	return out, nil
 }
 
-// create opens an output path, or stdout for "-".
-func create(path string) (*os.File, func(), error) {
+// create opens an output path, or the command's own stdout for "-".
+func create(h *Host, out io.Writer, path string) (io.Writer, func(), error) {
 	if path == "-" || path == "" {
-		return os.Stdout, func() {}, nil
+		return out, func() {}, nil
 	}
-	if dir := filepath.Dir(path); dir != "." {
-		if err := os.MkdirAll(dir, 0o755); err != nil {
+	full := h.resolve(path)
+	if dir := filepath.Dir(full); dir != "." && dir != "/" {
+		if err := h.Files.MkdirAll(dir, 0o755); err != nil {
 			return nil, nil, err
 		}
 	}
-	f, err := os.Create(path)
+	f, err := h.Files.Create(full)
 	if err != nil {
 		return nil, nil, err
 	}

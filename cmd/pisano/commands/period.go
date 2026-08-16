@@ -30,7 +30,9 @@ limit as though it were a period.`,
 	cmd.Flags().StringVarP(&mod, "mod", "m", "10", "modulus, or a range like 1-40")
 	cmd.Flags().IntVarP(&limit, "cap", "c", 0, "term limit for sequences that may not repeat")
 
-	cmd.RunE = func(_ *cobra.Command, _ []string) error {
+	cmd.RunE = func(cc *cobra.Command, _ []string) error {
+		stdout := cc.OutOrStdout()
+		_ = stdout
 		s, err := seq()
 		if err != nil {
 			return err
@@ -41,11 +43,11 @@ limit as though it were a period.`,
 		}
 		for _, m := range ms {
 			p := pisano.Compute(s, m, limit)
-			fmt.Println(p)
+			fmt.Fprintln(stdout, p)
 			if len(p.Head) > 0 {
-				fmt.Printf("  run-in: %v\n", p.Head)
+				fmt.Fprintf(stdout, "  run-in: %v\n", p.Head)
 			}
-			fmt.Printf("  terms:  %v\n", p.Terms)
+			fmt.Fprintf(stdout, "  terms:  %v\n", p.Terms)
 		}
 		return nil
 	}

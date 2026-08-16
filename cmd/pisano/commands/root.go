@@ -2,7 +2,9 @@
 package commands
 
 import (
+	"context"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -45,10 +47,24 @@ func init() {
 	)
 }
 
-// Execute runs the command tree.
+// Execute runs the command tree against the process.
 func Execute() {
-	if err := RootCmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, "pisano:", err)
-		os.Exit(1)
+	if code := Run(context.Background(), os.Args[1:], os.Stdout, os.Stderr); code != 0 {
+		os.Exit(code)
 	}
+}
+
+// Run executes the command tree with the given arguments and writers, and
+// returns an exit status. It is what a host that is not an operating system
+// calls: a shell applet has arguments and a pair of pipes, not os.Args and a
+// process to exit.
+func Run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+	RootCmd.SetArgs(args)
+	RootCmd.SetOut(stdout)
+	RootCmd.SetErr(stderr)
+	if err := RootCmd.ExecuteContext(ctx); err != nil {
+		fmt.Fprintln(stderr, "pisano:", err)
+		return 1
+	}
+	return 0
 }

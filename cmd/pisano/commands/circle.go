@@ -2,7 +2,6 @@ package commands
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
@@ -51,7 +50,9 @@ moduli 8/21/55 and 13/34/89 are only obvious side by side.`,
 	cmd.Flags().IntVarP(&limit, "cap", "c", 0, "term limit for sequences that may not repeat")
 	cmd.Flags().StringVar(&theme, "theme", "auto", "palette: auto, light, dark")
 
-	cmd.RunE = func(_ *cobra.Command, _ []string) error {
+	cmd.RunE = func(cc *cobra.Command, _ []string) error {
+		stdout, stderr := cc.OutOrStdout(), cc.ErrOrStderr()
+		h := hostFrom(cc.Context())
 		s, err := seq()
 		if err != nil {
 			return err
@@ -80,7 +81,7 @@ moduli 8/21/55 and 13/34/89 are only obvious side by side.`,
 			one.Cols = 1
 			for _, d := range designs {
 				name := filepath.Join(split, fmt.Sprintf("%s-mod%d.svg", slug(d.Seq), d.Modulus))
-				f, closeFn, err := create(name)
+				f, closeFn, err := create(h, stdout, name)
 				if err != nil {
 					return err
 				}
@@ -90,11 +91,11 @@ moduli 8/21/55 and 13/34/89 are only obvious side by side.`,
 					return err
 				}
 			}
-			fmt.Fprintf(os.Stderr, "wrote %d file(s) to %s\n", len(designs), split)
+			fmt.Fprintf(stderr, "wrote %d file(s) to %s\n", len(designs), split)
 			return nil
 		}
 
-		f, closeFn, err := create(out)
+		f, closeFn, err := create(h, stdout, out)
 		if err != nil {
 			return err
 		}
@@ -110,7 +111,7 @@ moduli 8/21/55 and 13/34/89 are only obvious side by side.`,
 			return err
 		}
 		if out != "-" {
-			fmt.Fprintf(os.Stderr, "wrote %d design(s) to %s\n", len(designs), out)
+			fmt.Fprintf(stderr, "wrote %d design(s) to %s\n", len(designs), out)
 		}
 		return nil
 	}

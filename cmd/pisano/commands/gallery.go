@@ -2,7 +2,7 @@ package commands
 
 import (
 	"fmt"
-	"os"
+	"io"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
@@ -43,17 +43,19 @@ The page is for looking at; the files are for using.`,
 	cmd.Flags().IntVar(&cell, "cell", 190, "pixels per figure")
 	cmd.Flags().StringVar(&theme, "theme", "auto", "palette for the SVG sheets: auto, light, dark")
 
-	cmd.RunE = func(_ *cobra.Command, _ []string) error {
+	cmd.RunE = func(cc *cobra.Command, _ []string) error {
+		stdout, stderr := cc.OutOrStdout(), cc.ErrOrStderr()
+		h := hostFrom(cc.Context())
 		th, err := pisano.ParseTheme(theme)
 		if err != nil {
 			return err
 		}
-		return buildGallery(out, svgDir, cell, th)
+		return buildGallery(h, stdout, stderr, out, svgDir, cell, th)
 	}
 	return cmd
 }()
 
-func buildGallery(out, svgDir string, cell int, theme pisano.Theme) error {
+func buildGallery(h *Host, stdout, stderr io.Writer, out, svgDir string, cell int, theme pisano.Theme) error {
 	// The page keeps the auto palette so it follows the reader's system, while
 	// the standalone sheets take whatever was asked for — they get converted to
 	// fixed images, and a media query cannot survive that.
@@ -236,7 +238,7 @@ func buildGallery(out, svgDir string, cell int, theme pisano.Theme) error {
 		secs = append(secs, sh.sec)
 	}
 
-	f, closeFn, err := create(out)
+	f, closeFn, err := create(h, stdout, out)
 	if err != nil {
 		return err
 	}
@@ -249,13 +251,13 @@ func buildGallery(out, svgDir string, cell int, theme pisano.Theme) error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(os.Stderr, "wrote %s (%d sections)\n", out, len(secs))
+	fmt.Fprintf(stderr, "wrote %s (%d sections)\n", out, len(secs))
 
 	if svgDir == "" {
 		return nil
 	}
 	for _, sh := range sheets {
-		g, closeG, err := create(filepath.Join(svgDir, sh.file))
+		g, closeG, err := create(h, stdout, filepath.Join(svgDir, sh.file))
 		if err != nil {
 			return err
 		}
@@ -269,6 +271,6 @@ func buildGallery(out, svgDir string, cell int, theme pisano.Theme) error {
 			return err
 		}
 	}
-	fmt.Fprintf(os.Stderr, "wrote %d SVG sheet(s) to %s\n", len(sheets), svgDir)
+	fmt.Fprintf(stderr, "wrote %d SVG sheet(s) to %s\n", len(sheets), svgDir)
 	return nil
 }

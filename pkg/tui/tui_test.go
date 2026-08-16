@@ -464,3 +464,28 @@ func TestClipPreservesStyleAndCloses(t *testing.T) {
 		t.Errorf("clip shortened a string that already fit")
 	}
 }
+
+// Every key name Bubble Tea can hand the model must be one the model binds.
+// The list is written out rather than derived, so a binding deleted by accident
+// shows up here instead of as a key that silently stops working.
+func TestKeyNamesAreBound(t *testing.T) {
+	produced := []string{
+		"ctrl+c", "esc", "up", "down", "left", "right", "pgup", "pgdown",
+		"q", " ", "a", "o", "s", "v", "m", "f", "t", "c", "r", "?", "h", "l",
+		"H", "L", "k", "j", "0", "[", "]",
+	}
+	for _, name := range produced {
+		before := frames(t, Options{Mod: 25}, 80, 24, 2)
+		after := before
+		after.Key(name)
+		if name == "q" || name == "esc" || name == "ctrl+c" {
+			if !after.quit {
+				t.Errorf("%q did not quit", name)
+			}
+			continue
+		}
+		if after.quit {
+			t.Errorf("%q quit unexpectedly", name)
+		}
+	}
+}

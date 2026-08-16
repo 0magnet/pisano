@@ -1,20 +1,21 @@
-//go:build !js
-
-// The Bubble Tea driver. It is one of two, and it is deliberately thin: it
-// translates Bubble Tea's messages into the four calls in model.go and hands
-// back the string the model rendered. The other driver, in the wasm build,
-// makes the same four calls from a shell applet's raw input loop.
+// The Bubble Tea driver. It is thin on purpose: it translates Bubble Tea's
+// messages into the four calls in model.go and hands back the string the model
+// rendered.
 //
-// The build tag is what lets the model itself compile for js/wasm. Bubble Tea
-// has no port there — it wants to listen for terminal resizes and suspend the
-// process, neither of which a browser has — so the driver stays behind, and
-// only the driver.
+// It used to be one of two drivers, behind a !js build tag, because Bubble Tea
+// did not build for WebAssembly — it wanted to listen for terminal resizes and
+// suspend the process, and a browser has neither. 0magnet/bubbletea's wasm
+// branch answers both (the host knows the size; there is nothing to suspend),
+// so there is one driver again and the browser runs the same event loop the
+// terminal does.
+//
+// What still differs by platform is not the loop but who owns the terminal:
+// natively the program takes stdin and stdout, and in a browser the host hands
+// it a reader, a writer and a size. That is what Program leaves to the caller.
 
 package tui
 
 import (
-	"fmt"
-	"os"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
@@ -56,41 +57,12 @@ func (t teaModel) View() tea.View {
 	return v
 }
 
-// Run opens the viewer.
+// Program builds the viewer as a Bubble Tea program, without running it.
 //
-// The alternate screen is declared by the view rather than requested here, so
-// the terminal it was launched from is left exactly as it was on exit.
-//
-// It refuses to start without an interactive terminal. A full-screen program
-// takes the terminal over and puts it in raw mode, where Ctrl-C is no longer a
-// signal but a keystroke the program itself has to honour — so one started by
-// mistake, from a pipeline or a shell loop, is markedly harder to get out of
-// than an ordinary command. Better to say so up front than to seize the screen
-// and hope.
-func Run(opt Options) error {
-	if err := checkTerminal(); err != nil {
-		return err
-	}
-	_, err := tea.NewProgram(teaModel{New(opt)}).Run()
-	return err
-}
-
-func checkTerminal() error {
-	for _, f := range []struct {
-		name string
-		file *os.File
-	}{{"stdin", os.Stdin}, {"stdout", os.Stdout}} {
-		fi, err := f.file.Stat()
-		if err != nil {
-			return fmt.Errorf("tui: cannot inspect %s: %w", f.name, err)
-		}
-		if fi.Mode()&os.ModeCharDevice == 0 {
-			return fmt.Errorf(
-				"tui needs an interactive terminal, but %s is a pipe or a file.\n"+
-					"  For output you can redirect, use: pisano turtle --mod N -o out.svg\n"+
-					"  To step through moduli in one session, use: pisano tui --cycle 5s",
-				f.name)
-		}
-	}
-	return nil
+// Callers supply whatever the program should read, write and believe about its
+// size. Natively that is stdin, stdout and the tty, which Run fills in; in a
+// browser it is the host's pipes and its own idea of how many cells it has,
+// since nothing else can know.
+func Program(opt Options, teaOpts ...tea.ProgramOption) *tea.Program {
+	return tea.NewProgram(teaModel{New(opt)}, teaOpts...)
 }

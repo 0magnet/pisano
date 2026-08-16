@@ -2,7 +2,6 @@ package commands
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -60,7 +59,9 @@ figure that looks like a plus sign.`,
 	cmd.Flags().IntVarP(&limit, "cap", "c", 0, "term limit for sequences that may not repeat")
 	cmd.Flags().StringVar(&theme, "theme", "auto", "palette: auto, light, dark")
 
-	cmd.RunE = func(_ *cobra.Command, _ []string) error {
+	cmd.RunE = func(cc *cobra.Command, _ []string) error {
+		stdout, stderr := cc.OutOrStdout(), cc.ErrOrStderr()
+		h := hostFrom(cc.Context())
 		s, err := seq()
 		if err != nil {
 			return err
@@ -77,7 +78,7 @@ figure that looks like a plus sign.`,
 		if out == "" && split == "" {
 			for i, p := range periods {
 				if i > 0 {
-					fmt.Println()
+					fmt.Fprintln(stdout)
 				}
 				art, shape := pisano.RenderTurtle(p, pisano.TurtleOptions{
 					Reps: reps, Colorize: !plain,
@@ -86,8 +87,8 @@ figure that looks like a plus sign.`,
 				if p.Modulus > 0 {
 					what = fmt.Sprintf("%s mod %d", p.Seq, p.Modulus)
 				}
-				fmt.Printf("%s — cycle %d, %s\n\n", what, p.Len(), shape)
-				fmt.Print(art)
+				fmt.Fprintf(stdout, "%s — cycle %d, %s\n\n", what, p.Len(), shape)
+				fmt.Fprint(stdout, art)
 			}
 			return nil
 		}
@@ -106,7 +107,7 @@ figure that looks like a plus sign.`,
 			for _, p := range periods {
 				name := filepath.Join(split,
 					fmt.Sprintf("%s-turtle-mod%d.svg", slug(p.Seq), p.Modulus))
-				f, closeFn, err := create(name)
+				f, closeFn, err := create(h, stdout, name)
 				if err != nil {
 					return err
 				}
@@ -116,13 +117,13 @@ figure that looks like a plus sign.`,
 					return err
 				}
 			}
-			fmt.Fprintf(os.Stderr, "wrote %d file(s) to %s\n", len(periods), split)
+			fmt.Fprintf(stderr, "wrote %d file(s) to %s\n", len(periods), split)
 			if out == "" {
 				return nil
 			}
 		}
 
-		f, closeFn, err := create(out)
+		f, closeFn, err := create(h, stdout, out)
 		if err != nil {
 			return err
 		}
@@ -138,7 +139,7 @@ figure that looks like a plus sign.`,
 			return err
 		}
 		if out != "-" {
-			fmt.Fprintf(os.Stderr, "wrote %d design(s) to %s\n", len(periods), out)
+			fmt.Fprintf(stderr, "wrote %d design(s) to %s\n", len(periods), out)
 		}
 		return nil
 	}
