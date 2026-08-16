@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="380" height="380" viewBox="0 0 380 380">
+<style>
+  .ring  { fill: none; stroke-width: 0.5; }
+  .chord { fill: none; stroke-linecap: round; stroke-opacity: 0.85; }
+  .path  { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .cap   { text-anchor: middle;
+           font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .bg    { fill: #ffffff; }
+  .ring  { stroke: #d8d8d8; }
+  .chord, .path { stroke: #1b3a5c; }
+  .pt    { fill: #b03a2e; }
+  .cap   { fill: #666; }
+  .p0 { stroke: #1b3a5c; }
+  .p1 { stroke: #b03a2e; }
+  .p2 { stroke: #2e7d5b; }
+  .p3 { stroke: #7a5aa8; }
+  .p4 { stroke: #b8860b; }
+  .p5 { stroke: #2e6d8e; }
+  @media (prefers-color-scheme: dark) {
+  .bg    { fill: #12141a; }
+  .ring  { stroke: #2c313c; }
+  .chord, .path { stroke: #8fc6f0; }
+  .pt    { fill: #e8825f; }
+  .cap   { fill: #7d8694; }
+  .p0 { stroke: #8fc6f0; }
+  .p1 { stroke: #e8825f; }
+  .p2 { stroke: #7fd1a8; }
+  .p3 { stroke: #b9a3e3; }
+  .p4 { stroke: #e0c060; }
+  .p5 { stroke: #6fb3d2; }
+  }
+</style>
+<rect class="bg" width="380" height="380"/>
+<g transform="translate(19.48,11.40)">
+<path class="path " stroke-width="1.38" stroke-linejoin="round" d="M1.38 149.67L1.38 100.24L50.81 100.24L50.81 50.81L100.24 50.81L100.24 1.38L149.67 1.38"/>
+</g>
+<text class="cap" x="95.00" y="184.30" font-size="13.2">nat · 2 · open</text>
+<g transform="translate(209.48,11.40)">
+<path class="path " stroke-width="1.38" stroke-linejoin="round" d="M149.67 100.24L149.67 50.81L100.24 50.81L100.24 1.38L50.81 1.38L50.81 50.81L1.38 50.81L1.38 100.24L50.81 100.24L50.81 149.67L100.24 149.67L100.24 100.24L149.67 100.24"/>
+</g>
+<text class="cap" x="285.00" y="184.30" font-size="13.2">fib · 3 · closed</text>
+<g transform="translate(19.48,201.40)">
+<path class="path " stroke-width="1.38" stroke-linejoin="round" d="M87.88 149.67L87.88 124.95L63.17 124.95L63.17 100.24L87.88 100.24L87.88 75.52L63.17 75.52L63.17 50.81L87.88 50.81L87.88 26.10L63.17 26.10L63.17 1.38L87.88 1.38"/>
+</g>
+<text class="cap" x="95.00" y="374.30" font-size="13.2">tri · 4 · open</text>
+<g transform="translate(209.48,201.40)">
+<path class="path " stroke-width="1.38" stroke-linejoin="round" d="M50.81 100.24L50.81 149.67L100.24 149.67L100.24 100.24L149.67 100.24L149.67 50.81L100.24 50.81L100.24 1.38L50.81 1.38L50.81 50.81L1.38 50.81L1.38 100.24L50.81 100.24"/>
+</g>
+<text class="cap" x="285.00" y="374.30" font-size="13.2">lucas · 3 · closed</text>
+</svg>
