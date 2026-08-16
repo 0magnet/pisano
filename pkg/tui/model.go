@@ -11,10 +11,7 @@ package tui
 
 import (
 	"fmt"
-	"os"
 	"time"
-
-	tea "charm.land/bubbletea/v2"
 
 	"github.com/0magnet/pisano/pkg/pisano"
 )
@@ -27,11 +24,8 @@ const frame = 40 * time.Millisecond
 // the trace starts over — about a second.
 const holdFrames = 25
 
-type tickMsg time.Time
-
-func tick() tea.Cmd {
-	return tea.Tick(frame, func(t time.Time) tea.Msg { return tickMsg(t) })
-}
+// FrameInterval is how often a driver should call Advance.
+const FrameInterval = frame
 
 // View modes.
 const (
@@ -273,8 +267,6 @@ func New(opt Options) Model {
 	return m
 }
 
-func (m Model) Init() tea.Cmd { return tick() }
-
 // sequence builds the currently selected sequence.
 func (m Model) sequence() pisano.Sequence {
 	return sequences[m.seqIdx].build(m.mul)
@@ -493,73 +485,43 @@ func (m *Model) cycle() {
 	m.reload()
 }
 
-// Run opens the viewer.
+// --- the portable surface --------------------------------------------------
 //
-// The alternate screen is declared by the view rather than requested here, so
-// the terminal it was launched from is left exactly as it was on exit.
-//
-// It refuses to start without an interactive terminal. A full-screen program
-// takes the terminal over and puts it in raw mode, where Ctrl-C is no longer a
-// signal but a keystroke the program itself has to honour — so one started by
-// mistake, from a pipeline or a shell loop, is markedly harder to get out of
-// than an ordinary command. Better to say so up front than to seize the screen
-// and hope.
-func Run(opt Options) error {
-	if err := checkTerminal(); err != nil {
-		return err
-	}
-	_, err := tea.NewProgram(New(opt)).Run()
-	return err
+// Everything below is what a driver needs and all it needs: hand the model a
+// size, a keystroke or a frame, and ask it for a picture. None of it knows what
+// is delivering those. That is what lets the same viewer run under a terminal
+// program on a desktop and inside a shell compiled to WebAssembly, drawing the
+// identical figure from the identical code.
+
+// Resize sets the viewport, in character cells.
+func (m *Model) Resize(w, h int) {
+	m.w, m.h = w, h
+	m.updateCamera()
 }
 
-func checkTerminal() error {
-	for _, f := range []struct {
-		name string
-		file *os.File
-	}{{"stdin", os.Stdin}, {"stdout", os.Stdout}} {
-		fi, err := f.file.Stat()
-		if err != nil {
-			return fmt.Errorf("tui: cannot inspect %s: %w", f.name, err)
-		}
-		if fi.Mode()&os.ModeCharDevice == 0 {
-			return fmt.Errorf(
-				"tui needs an interactive terminal, but %s is a pipe or a file.\n"+
-					"  For output you can redirect, use: pisano turtle --mod N -o out.svg\n"+
-					"  To step through moduli in one session, use: pisano tui --cycle 5s",
-				f.name)
-		}
-	}
-	return nil
-}
-
-func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
-	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		m.w, m.h = msg.Width, msg.Height
-
-	case tickMsg:
-		if m.playing {
-			m.advance(m.speed)
-			m.cycle()
-		}
-		cmd = tick()
-
-	case tea.KeyPressMsg:
-		// v2 splits presses from releases; only presses drive anything here.
-		var next tea.Model
-		next, cmd = m.onKey(msg)
-		m = next.(Model)
+// Advance runs one animation frame. Drivers call it every FrameInterval.
+func (m *Model) Advance() {
+	if m.playing {
+		m.advance(m.speed)
+		m.cycle()
 	}
 	m.updateCamera()
-	return m, cmd
 }
 
-func (m Model) onKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	switch msg.String() {
+// Key applies a keystroke, named the way Bubble Tea names them: single
+// characters as themselves, and "left", "right", "up", "down", "pgup",
+// "pgdown", "esc", "ctrl+c" for the rest. It reports whether the viewer should
+// keep running.
+func (m *Model) Key(name string) bool {
+	m.apply(name)
+	m.updateCamera()
+	return !m.quit
+}
+
+func (m *Model) apply(name string) {
+	switch name {
 	case "q", "esc", "ctrl+c":
 		m.quit = true
-		return m, tea.Quit
 
 	case " ":
 		m.playing = !m.playing
@@ -636,7 +598,6 @@ func (m Model) onKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case "?":
 		m.help = !m.help
 	}
-	return m, nil
 }
 
 // nextOpen walks forward to the next modulus with an open turtle path, giving

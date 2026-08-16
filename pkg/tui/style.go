@@ -1,6 +1,9 @@
 package tui
 
-import "strings"
+import (
+	"strings"
+	"unicode/utf8"
+)
 
 // ANSI styling, written out directly rather than through a styling library.
 //
@@ -46,3 +49,44 @@ func (m Model) key(s string) string {
 // height counts the lines a block occupies, which is what the layout needs and
 // all that was ever wanted from lipgloss.Height.
 func height(s string) int { return strings.Count(s, "\n") + 1 }
+
+// clip truncates a styled string to w visible cells.
+//
+// A full-screen program must never emit a line longer than the terminal, or the
+// terminal wraps it — and then the chrome occupies more rows than the layout
+// budgeted, pushing the top of the drawing off the screen. The escape sequences
+// have to be skipped rather than counted, since they take no space, and a
+// truncated line has to be closed off so its colour does not leak.
+func clip(s string, w int) string {
+	if w < 1 {
+		return ""
+	}
+	var b strings.Builder
+	seen, styled := 0, false
+	for i := 0; i < len(s); {
+		if s[i] == 0x1b {
+			j := i
+			for j < len(s) && s[j] != 'm' {
+				j++
+			}
+			if j < len(s) {
+				j++
+			}
+			b.WriteString(s[i:j])
+			styled = true
+			i = j
+			continue
+		}
+		r, size := utf8.DecodeRuneInString(s[i:])
+		if seen >= w {
+			if styled {
+				b.WriteString(sgrReset)
+			}
+			return b.String()
+		}
+		b.WriteRune(r)
+		seen++
+		i += size
+	}
+	return s
+}

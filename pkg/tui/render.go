@@ -5,8 +5,6 @@ import (
 	"math"
 	"strings"
 
-	tea "charm.land/bubbletea/v2"
-
 	"github.com/0magnet/pisano/pkg/pisano"
 )
 
@@ -26,26 +24,18 @@ func (m Model) segColor(i int) string {
 	return passColors[m.ptPass[i]%len(passColors)]
 }
 
-// View renders the whole screen.
-//
-// In v2 the alternate screen is a property of the view rather than a program
-// option, so it is declared here alongside everything else the frame consists
-// of, and the program never has to be told about it separately.
-func (m Model) View() tea.View {
-	var v tea.View
-	v.AltScreen = true
+// Frame renders the whole screen as a plain string. It is the only output the
+// model produces, so every driver draws the same picture.
+func (m Model) Frame() string {
 	if m.quit {
-		return v
+		return ""
 	}
 	if m.w == 0 || m.h == 0 {
-		v.SetContent("starting...")
-		return v
+		return "starting..."
 	}
-	v.SetContent(m.frame())
-	return v
+	return m.frame()
 }
 
-// frame is the screen as a plain string, which is what the tests work on.
 func (m Model) frame() string {
 	head := m.header()
 	foot := m.footer()
@@ -60,7 +50,19 @@ func (m Model) frame() string {
 	} else {
 		body = m.canvas(m.w, bodyH)
 	}
-	return head + "\n" + padTo(body, bodyH) + "\n" + foot
+	// The chrome is clipped to the terminal width: a wrapped header or footer
+	// would occupy more rows than bodyH budgeted for, and the drawing would be
+	// pushed off the top of the screen.
+	return clip(head, m.w) + "\n" + padTo(body, bodyH) + "\n" + clipLines(foot, m.w)
+}
+
+// clipLines clips every line of a multi-line block.
+func clipLines(s string, w int) string {
+	lines := strings.Split(s, "\n")
+	for i, l := range lines {
+		lines[i] = clip(l, w)
+	}
+	return strings.Join(lines, "\n")
 }
 
 func (m Model) header() string {
@@ -95,7 +97,13 @@ func (m Model) footer() string {
 	if m.playing {
 		state = "playing"
 	}
+	// The circular design is always braille — chords at arbitrary angles have
+	// nowhere to live on a character grid — so reporting the box setting there
+	// would name a renderer that is not running.
 	modeName := [...]string{"box", "braille"}[m.mode]
+	if m.view == viewCircle {
+		modeName = "braille"
+	}
 	camName := camNames[m.cam]
 	if m.cam == camAuto {
 		camName = "auto/" + camNames[m.camera()]
@@ -124,19 +132,32 @@ func (m Model) footer() string {
 		status = m.warn(m.note)
 	}
 
-	keys := m.dim(
-		m.key("space") + " play  " +
-			m.key("←→") + " mod  " +
-			m.key("↑↓") + " speed  " +
-			m.key("o") + " next-open  " +
-			m.key("a") + " auto  " +
-			m.key("t") + " trail  " +
-			m.key("s") + " seq  " +
-			m.key("v") + " view  " +
-			m.key("m") + " render  " +
-			m.key("f") + " cam  " +
-			m.key("?") + " help  " +
-			m.key("q") + " quit")
+	// The full hint line is about ninety cells; on a narrower terminal it would
+	// be clipped to something misleading, so drop to the essentials and let ?
+	// carry the rest.
+	var keys string
+	if m.w < 96 {
+		keys = m.dim(
+			m.key("space") + " play  " +
+				m.key("←→") + " mod  " +
+				m.key("o") + " open  " +
+				m.key("?") + " help  " +
+				m.key("q") + " quit")
+	} else {
+		keys = m.dim(
+			m.key("space") + " play  " +
+				m.key("←→") + " mod  " +
+				m.key("↑↓") + " speed  " +
+				m.key("o") + " next-open  " +
+				m.key("a") + " auto  " +
+				m.key("t") + " trail  " +
+				m.key("s") + " seq  " +
+				m.key("v") + " view  " +
+				m.key("m") + " render  " +
+				m.key("f") + " cam  " +
+				m.key("?") + " help  " +
+				m.key("q") + " quit")
+	}
 
 	return status + "\n" + keys
 }

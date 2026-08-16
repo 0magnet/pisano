@@ -298,6 +298,52 @@ $ go run . sweep --max 60 --dupes
   ...
 ```
 
+## In the browser
+
+The same designs, driven from a shell, compiled to WebAssembly:
+**[0magnet.github.io/pisano/term/](https://0magnet.github.io/pisano/term/)**
+
+```
+pisano:~$ pisano tui                                 the viewer, full screen
+pisano:~$ pisano turtle --mod 25                     box drawing, in the shell
+pisano:~$ pisano sweep --max 300                     the analysis
+pisano:~$ pisano circle --mod 1-40 -o sheet.svg && download sheet.svg
+```
+
+The terminal and the shell are **[websh](https://github.com/0magnet/websh)** —
+xterm-go, a real Bash interpreter, and a virtual filesystem, all already
+compiled to wasm. This repo adds one applet to it. So the pipes, globs, history
+and tab completion are the shell's, `download` is websh's, and the figures are
+this package's, unchanged.
+
+The viewer running there is the *same* `tui.Model` the desktop binary runs. What
+differs is only what feeds it:
+
+```
+                 Resize / Advance / Key / Frame
+                              |
+        +---------------------+---------------------+
+        |                                           |
+   Bubble Tea                                  websh applet
+   (native, pkg/tui/bubbletea.go)              (wasm, web/applet.go)
+   key messages, a Tick command                raw bytes, a time.Ticker
+```
+
+Four calls, one model, one set of tests covering both. `pkg/tui` has no
+dependency on Bubble Tea except in that one build-tagged file — which is what
+lets it compile for js/wasm at all, since Bubble Tea has no port there.
+
+Building it:
+
+```
+web/build.sh          # TinyGo   -> docs/term        3.5 MB
+web/build.sh go       # Go       -> docs/term/go      13 MB
+```
+
+`web/` is a separate module. Keeping it out of the root one means the CLI's
+dependencies stay at cobra and Bubble Tea, rather than dragging in a terminal
+emulator and a shell interpreter for a build almost nobody makes.
+
 ## The figures
 
 Every sheet below is produced by `pisano gallery`, which also writes them as

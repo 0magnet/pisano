@@ -160,6 +160,13 @@ type Section struct {
 // the same page works as a gallery to browse and as a place to lift individual
 // figures from for a site.
 func WriteHTML(w io.Writer, title string, secs []Section) error {
+	return WriteHTMLPage(w, title, "", secs)
+}
+
+// WriteHTMLPage is WriteHTML with a lead paragraph. The lead is raw HTML and is
+// written verbatim, so it is for the caller's own markup — a link to somewhere
+// else on the site, say — and not for anything that came from outside.
+func WriteHTMLPage(w io.Writer, title, lead string, secs []Section) error {
 	bw := bufio.NewWriter(w)
 
 	fmt.Fprintf(bw, "<!doctype html>\n<html lang=\"en\">\n<meta charset=\"utf-8\">\n"+
@@ -167,6 +174,9 @@ func WriteHTML(w io.Writer, title string, secs []Section) error {
 		"<title>%s</title>\n", svgEscape(title))
 	fmt.Fprint(bw, htmlStyle())
 	fmt.Fprintf(bw, "<h1>%s</h1>\n", svgEscape(title))
+	if lead != "" {
+		fmt.Fprintf(bw, "<p class=\"lead\">%s</p>\n", lead)
+	}
 
 	for _, sec := range secs {
 		if len(sec.Tiles) == 0 {
@@ -274,6 +284,8 @@ func htmlStyle() string {
   h2 { font-size: 1rem; font-weight: 600; margin: 2.5rem 0 .25rem;
        padding-bottom: .4rem; border-bottom: 1px solid var(--line); }
   .note { color: var(--muted); margin: .35rem 0 1.25rem; max-width: 62ch; }
+  .lead { margin: .35rem 0 2rem; max-width: 62ch; }
+  .lead a { color: inherit; }
   .grid { display: grid; gap: 1rem;
           grid-template-columns: repeat(auto-fill, minmax(var(--min, 180px), 1fr)); }
   figure { margin: 0; }

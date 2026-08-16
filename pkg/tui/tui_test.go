@@ -4,36 +4,34 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	tea "charm.land/bubbletea/v2"
+	"unicode/utf8"
 
 	"github.com/0magnet/pisano/pkg/pisano"
 )
 
-// frames drives the model headlessly: size it, then tick it n times.
+// frames drives the model headlessly through the same four calls both drivers
+// make, so the tests cover what the terminal and the browser actually run
+// rather than one driver's idea of it.
 func frames(t *testing.T, opt Options, w, h, n int) Model {
 	t.Helper()
 	m := New(opt)
-	mm, _ := m.Update(tea.WindowSizeMsg{Width: w, Height: h})
-	m = mm.(Model)
+	m.Resize(w, h)
 	for i := 0; i < n; i++ {
-		mm, _ = m.Update(tickMsg{})
-		m = mm.(Model)
+		m.Advance()
 	}
 	return m
 }
 
 func (m Model) tick(n int) Model {
 	for i := 0; i < n; i++ {
-		mm, _ := m.Update(tickMsg{})
-		m = mm.(Model)
+		m.Advance()
 	}
 	return m
 }
 
 func (m Model) press(k rune) Model {
-	mm, _ := m.Update(tea.KeyPressMsg{Code: k, Text: string(k)})
-	return mm.(Model)
+	m.Key(string(k))
+	return m
 }
 
 // The view must always be exactly as tall as the terminal, or the footer walks
@@ -53,7 +51,7 @@ func TestViewFillsTheScreen(t *testing.T) {
 	} {
 		for _, size := range [][2]int{{80, 24}, {40, 12}, {200, 60}} {
 			m := frames(t, opt, size[0], size[1], 20)
-			got := strings.Count(m.frame(), "\n") + 1
+			got := strings.Count(m.Frame(), "\n") + 1
 			if got != size[1] {
 				t.Errorf("mod %d %dx%d: view is %d lines, want %d",
 					opt.Mod, size[0], size[1], got, size[1])
@@ -271,7 +269,7 @@ func TestNoPanicAcrossModuli(t *testing.T) {
 		for mod := 1; mod <= 40; mod++ {
 			for _, circle := range []bool{false, true} {
 				m := frames(t, Options{Seq: seq, Mod: mod, Speed: 8, Circle: circle}, 60, 20, 6)
-				if m.frame() == "" {
+				if m.Frame() == "" {
 					t.Errorf("%s mod %d: empty view", seq, mod)
 				}
 			}
@@ -320,7 +318,7 @@ func TestTogglesStayDrawable(t *testing.T) {
 	m := frames(t, Options{Mod: 25, Speed: 4}, 80, 24, 10)
 	for _, k := range []rune{'v', 'm', 'f', 't', 'c', 's', ']', '[', '0', 'r', '?'} {
 		m = m.press(k).tick(1)
-		if got := strings.Count(m.frame(), "\n") + 1; got != 24 {
+		if got := strings.Count(m.Frame(), "\n") + 1; got != 24 {
 			t.Errorf("after %q: view is %d lines, want 24", k, got)
 		}
 	}
@@ -415,5 +413,54 @@ func TestManualStepResetsTheDwell(t *testing.T) {
 	m = m.tick(9)
 	if m.mod != 6 {
 		t.Errorf("modulus is %d; the dwell did not restart", m.mod)
+	}
+}
+
+// A full-screen program must never emit a line wider than the terminal. If it
+// does the terminal wraps it, the chrome then occupies more rows than the
+// layout budgeted, and the top of the drawing is pushed off the screen — which
+// is exactly what happened in a browser at 700px before this was checked.
+func TestNoLineExceedsTheWidth(t *testing.T) {
+	for _, size := range [][2]int{{40, 12}, {60, 16}, {80, 24}, {96, 30}, {200, 60}} {
+		for _, opt := range []Options{{Mod: 25}, {Mod: 11}, {Mod: 10, Circle: true}} {
+			m := frames(t, opt, size[0], size[1], 30)
+			for i, line := range strings.Split(m.Frame(), "\n") {
+				if n := visibleWidth(line); n > size[0] {
+					t.Errorf("%dx%d mod %d line %d is %d cells wide, max %d: %q",
+						size[0], size[1], opt.Mod, i, n, size[0], line)
+				}
+			}
+		}
+	}
+}
+
+// visibleWidth counts cells, skipping escape sequences.
+func visibleWidth(s string) int {
+	n := 0
+	for i := 0; i < len(s); {
+		if s[i] == 0x1b {
+			for i < len(s) && s[i] != 'm' {
+				i++
+			}
+			i++
+			continue
+		}
+		_, size := utf8.DecodeRuneInString(s[i:])
+		n++
+		i += size
+	}
+	return n
+}
+
+func TestClipPreservesStyleAndCloses(t *testing.T) {
+	got := clip("\x1b[36mabcdef\x1b[0m", 3)
+	if visibleWidth(got) != 3 {
+		t.Errorf("clip to 3 gave width %d: %q", visibleWidth(got), got)
+	}
+	if !strings.HasSuffix(got, sgrReset) {
+		t.Errorf("clipped styled text does not close its style: %q", got)
+	}
+	if s := "short"; clip(s, 40) != s {
+		t.Errorf("clip shortened a string that already fit")
 	}
 }
