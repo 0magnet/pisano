@@ -5,7 +5,7 @@ go 1.26
 replace github.com/0magnet/pisano => ../
 
 require (
-	github.com/0magnet/desk v0.0.0-20260816213939-3980c59b72fd
+	github.com/0magnet/desk v0.0.0-20260816223435-0ecc3022e821
 	github.com/0magnet/pisano v0.0.0-00010101000000-000000000000
 	github.com/0magnet/sh/v3 v3.13.2-0.20260814172914-eff537668adf
 	github.com/0magnet/websh v0.0.0-20260816205508-7dce73170d0e

@@ -41,11 +41,12 @@ func main() {
 	}
 
 	desk.Register(desk.App{
-		Name:   "term",
-		Title:  "terminal",
-		Help:   "a shell with the pisano commands",
-		Width:  780,
-		Height: 470,
+		Name:      "term",
+		Maximized: true,
+		Title:     "terminal",
+		Help:      "a shell with the pisano commands",
+		Width:     780,
+		Height:    470,
 		Open: func([]string) (desk.Pane, error) {
 			return term.New(greeting, "pisano"), nil
 		},
