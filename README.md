@@ -320,6 +320,34 @@ motion, so the net turn decides everything.
 `Classify` reads this off a single pass without walking the path, and the test
 suite checks its verdict against actually walking it for every modulus to 200.
 
+**And in space?** The same argument works, and says more. Give the turtle a
+third dimension — the parity of the term still picks left or right, and the
+parity of the *next* term picks whether the turn is a yaw or a pitch. Reading
+the pair is the point rather than a convenience: (Fₙ, Fₙ₊₁) mod *m* is the state
+of the recurrence, and the Pisano period is the period of that pair, which is
+why the period is the length it is.
+
+One pass is still a rigid motion, but the heading now lives in the rotation
+group of the cube instead of ℤ/4. Iterating (R, t) for k passes displaces by
+(I + R + … + R^k⁻¹)t, and taking k to be the order of R makes that k times the
+projection of t onto R's axis. So **the path closes exactly when the drift has
+no component along the axis of rotation** — which reduces correctly, since in
+the plane a non-trivial rotation fixes only the origin and every turning path
+closes.
+
+Space adds two outcomes the plane cannot have. A net turn *and* an axial drift
+is a screw motion: the figure winds along its own axis forever. And element
+orders in the rotation group of the cube are 1, 2, 3 and 4, so a path can close
+after exactly **three** passes, from a rotation about a body diagonal.
+
+`Classify3` and `Path3` in `pkg/pisano` do this; the tests check the prediction
+against walking it, and pin the rule against a variant that takes both bits from
+one term — which cannot use the third dimension at all at modulus 2, winds its
+helices about the starting frame's own "up" axis, and comes out flatter. There
+is no terminal renderer for it here; the figures are drawn by
+[chaosrack](https://github.com/0magnet/chaosrack), whose **Turtle Path** mode
+walks them in WebGL.
+
 The video also notes that several moduli produce identical turtle designs.
 `sweep --dupes` canonicalises each path up to position and orientation and groups
 them:
