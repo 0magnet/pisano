@@ -8,20 +8,22 @@ import (
 	"github.com/0magnet/pisano/pkg/pisano"
 )
 
-// passColors tint successive circuits. On a closed path the geometry repeats
-// exactly, so colour is the only thing that changes between one lap and the
-// next — which is what turns a finished figure into something still worth
-// watching.
+// passColors tint the path. Which color a step gets is pisano.Tints's to say:
+// the first walk of a step takes the color of the pass that walked it, and
+// walking it again moves forward through the palette, or back if it is being
+// walked against the way it went before. On a closed path that is the only
+// thing that changes between one circuit and the next, which is what turns a
+// finished figure into something still worth watching.
 var passColors = []string{
 	"\x1b[36m", "\x1b[35m", "\x1b[32m", "\x1b[33m", "\x1b[34m", "\x1b[31m",
 }
 
-// segColor tints the segment ending at point i by the pass that drew it.
+// segColor is the color of the segment ending at point i.
 func (m Model) segColor(i int) string {
-	if !m.color || i >= len(m.ptPass) {
+	if !m.color || i >= len(m.ptTint) {
 		return ""
 	}
-	return passColors[m.ptPass[i]%len(passColors)]
+	return passColors[pisano.TintIndex(m.ptTint[i], len(passColors))]
 }
 
 // Frame renders the whole screen as a plain string. It is the only output the
@@ -126,8 +128,13 @@ func (m Model) footer() string {
 		state = fmt.Sprintf("%s · next mod in %.0fs", state, left)
 	}
 
-	status := m.dim(fmt.Sprintf("%s · %s · %s · %s · ×%d · %s",
-		viewName, modeName, camName, progress, m.speed, state))
+	tintName := "mono"
+	if m.color {
+		tintName = pisano.TintModes()[m.tintIx].String()
+	}
+
+	status := m.dim(fmt.Sprintf("%s · %s · %s · %s · %s · ×%d · %s",
+		viewName, modeName, camName, progress, tintName, m.speed, state))
 	if m.note != "" {
 		status = m.warn(m.note)
 	}
@@ -155,6 +162,7 @@ func (m Model) footer() string {
 				m.key("v") + " view  " +
 				m.key("m") + " render  " +
 				m.key("f") + " cam  " +
+				m.key("c") + " tint  " +
 				m.key("?") + " help  " +
 				m.key("q") + " quit")
 	}
@@ -177,7 +185,7 @@ func (m Model) helpText() string {
 		{"v", "turtle path or circular design"},
 		{"m", "box-drawing characters or braille dots"},
 		{"f", "camera: auto, fit, follow, scroll the least it can, page"},
-		{"c", "colour on / off"},
+		{"c", "color: " + pisano.TintNames() + ", off"},
 		{"r", "restart the walk"},
 		{"q", "quit"},
 	}
@@ -189,7 +197,7 @@ func (m Model) helpText() string {
 	}
 	b.WriteString("\n" + m.dim(
 		"The walk never finishes. A closed path is simply walked again, retracing the\n"+
-			"same figure in the next colour, so the loop sweeps round instead of sitting\n"+
+			"same figure in the next color, so the loop sweeps round instead of sitting\n"+
 			"there done. An open one drifts forever and the camera chases its head, with\n"+
 			"the oldest of the path dropped as it goes.\n\n"+
 			"Which of the two happens is decided by the net turn over one pass: a quarter\n"+
@@ -243,7 +251,7 @@ func (m Model) turtleBox(w, h int) string {
 		x0, y0 = head.X*2-w/2, head.Y-h/2
 	default:
 		minX, minY, maxX, maxY := bounds(m.pts)
-		x0 = (minX + maxX) - w/2 // minX+maxX is the centre, already doubled
+		x0 = (minX + maxX) - w/2 // minX+maxX is the center, already doubled
 		y0 = (minY+maxY)/2 - h/2
 	}
 

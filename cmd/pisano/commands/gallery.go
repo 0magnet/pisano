@@ -132,7 +132,7 @@ func buildGallery(h *Host, stdout, stderr io.Writer, out, svgDir string, cell in
 		fib, seqRange(1, 9))
 
 	circles("fib-10.svg", "Fibonacci, modulus 10",
-		"A period of 60, so far more chords than its neighbours, and still "+
+		"A period of 60, so far more chords than its neighbors, and still "+
 			"symmetrical.", fib, []int{10})
 
 	circles("fib-family-a.svg", "Fibonacci moduli 8, 21, 55",

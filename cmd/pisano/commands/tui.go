@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/0magnet/pisano/pkg/pisano"
 	"github.com/0magnet/pisano/pkg/tui"
 )
 
@@ -21,6 +22,7 @@ var tuiCmd = func() *cobra.Command {
 		render string
 		cam    string
 		trail  string
+		tint   string
 		circle bool
 		paused bool
 		cycle  time.Duration
@@ -35,12 +37,12 @@ The walk never finishes. An open path drifts forever, so the camera follows its
 head and the oldest of the drawing is dropped as it scrolls off — the figure
 stays at its true size rather than shrinking to fit. A closed path is simply
 walked again from where it left off, retracing exactly the same figure in the
-next colour, so the loop sweeps round instead of sitting there done.
+next color, so the loop sweeps round instead of sitting there done.
 
 --cam scroll leaves the view where it is until the head reaches the edge, then
 moves by the least it can to keep it in frame; --cam page does the same but
 shoves the view most of a screen at a time, so it is still for longer and then
-jumps once. --cam follow pins the head to the centre instead, which is exact but
+jumps once. --cam follow pins the head to the center instead, which is exact but
 means the whole drawing slides on every frame.
 
 --trail sets how much stays on screen: a whole circuit, or a shorter tail that
@@ -70,16 +72,20 @@ same reason.`,
 	cmd.Flags().BoolVar(&noMod, "no-mod", false, "start with no modulus at all")
 	cmd.Flags().IntVarP(&speed, "speed", "r", 4, "path steps drawn per frame")
 	cmd.Flags().IntVar(&maxPts, "max-points", 60000, "stop extending an open path past this many points")
-	cmd.Flags().BoolVar(&mono, "mono", false, "no colour")
+	cmd.Flags().BoolVar(&mono, "mono", false, "no color")
 	cmd.Flags().StringVar(&render, "render", "box", "renderer: box, braille")
 	cmd.Flags().StringVar(&cam, "cam", "auto", "camera: auto, fit, follow, scroll, page")
 	cmd.Flags().StringVar(&trail, "trail", "whole", "how much stays on screen: whole, long, short, comet")
+	cmd.Flags().StringVar(&tint, "tint", "step", "what a color means: "+pisano.TintNames())
 	cmd.Flags().BoolVar(&circle, "circle", false, "start on the circular design rather than the turtle path")
 	cmd.Flags().BoolVar(&paused, "paused", false, "start paused")
 	cmd.Flags().DurationVar(&cycle, "cycle", 0, "step to the next modulus this often, e.g. 5s")
 
 	cmd.RunE = func(cc *cobra.Command, _ []string) error {
 		h := hostFrom(cc.Context())
+		if _, err := pisano.ParseTint(tint); err != nil {
+			return err
+		}
 		if h.RunViewer == nil {
 			return fmt.Errorf("tui: this host cannot open a full-screen viewer")
 		}
@@ -94,6 +100,7 @@ same reason.`,
 			Render: render,
 			Cam:    cam,
 			Trail:  trail,
+			Tint:   tint,
 			Circle: circle,
 			Paused: paused,
 			Cycle:  cycle,

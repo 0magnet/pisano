@@ -79,7 +79,7 @@ func viewer(s *shell.Shell, hc *interp.HandlerContext) func(tui.Options) error {
 			cols, rows = s.Size()
 		}
 		// Raw input: no echo, no newline translation, and Ctrl+C arrives as a
-		// keystroke for the program to honour rather than as a cancellation.
+		// keystroke for the program to honor rather than as a cancellation.
 		if s.RawMode != nil {
 			s.RawMode(true)
 			defer s.RawMode(false)
@@ -91,7 +91,7 @@ func viewer(s *shell.Shell, hc *interp.HandlerContext) func(tui.Options) error {
 			tea.WithWindowSize(cols, rows),
 			// There are no signals to catch in a page.
 			tea.WithoutSignalHandler(),
-			// Bubble Tea profiles its output to decide how much colour to
+			// Bubble Tea profiles its output to decide how much color to
 			// emit, and an io.Pipe is not a terminal, so it would strip every
 			// escape the model writes. The terminal on the other end of that
 			// pipe is a real one; it is only this side that cannot tell.

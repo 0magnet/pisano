@@ -95,7 +95,7 @@ func (s Sheet) cols(n int) int {
 func (s Sheet) Stroke() float64 { return math.Max(0.6, float64(s.cell())/220) }
 
 // captionSize shrinks a caption that would otherwise run past its tile and
-// collide with its neighbour. SVG will not wrap or ellipsize text for you, and
+// collide with its neighbor. SVG will not wrap or ellipsize text for you, and
 // the captions here vary in length — "m=7 · 16 · open" against
 // "triangular · 4 · open" — so the size has to come from the text.
 //
@@ -211,7 +211,7 @@ func WriteHTMLPage(w io.Writer, title, lead string, secs []Section) error {
 	return bw.Flush()
 }
 
-// palette is every colour a sheet uses. Keeping them together is what makes a
+// palette is every color a sheet uses. Keeping them together is what makes a
 // second theme a data change rather than a second stylesheet.
 type palette struct {
 	bg, ring, chord, pt, caption string
@@ -243,7 +243,7 @@ func (p palette) rules() string {
 	return b.String()
 }
 
-// styleBlock keeps colour out of the geometry, so a figure is the same markup
+// styleBlock keeps color out of the geometry, so a figure is the same markup
 // whatever palette it lands in.
 func styleBlock(t Theme) string {
 	const shape = `  .ring  { fill: none; stroke-width: 0.5; }

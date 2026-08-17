@@ -70,7 +70,7 @@ func TestFlagsDoNotSurviveTheCommand(t *testing.T) {
 func TestDefaultsAreRestoredForEveryFlag(t *testing.T) {
 	if _, code, out := runWith(t,
 		"tui", "--seq", "lucas", "--mul", "3", "--speed", "9",
-		"--render", "braille", "--cam", "page", "--trail", "comet",
+		"--render", "braille", "--cam", "page", "--trail", "comet", "--tint", "age",
 		"--circle", "--paused", "--mono", "--no-mod", "--max-points", "42",
 	); code != 0 {
 		t.Fatalf("first run failed: %d %s", code, out)
@@ -82,7 +82,7 @@ func TestDefaultsAreRestoredForEveryFlag(t *testing.T) {
 	}
 	want := tui.Options{
 		Seq: "fib", Mul: 1, Mod: 25, Speed: 4, MaxPts: 60000,
-		Render: "box", Cam: "auto", Trail: "whole",
+		Render: "box", Cam: "auto", Trail: "whole", Tint: "step",
 	}
 	if opt != want {
 		t.Errorf("a bare tui inherited flags\n got %+v\nwant %+v", opt, want)

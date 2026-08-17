@@ -47,7 +47,7 @@ them. This is the one for paths that never close — see below.
 
 ```
 go run . tui                       # fib mod 25, an open path, scrolling
-go run . tui --mod 11              # a closed path, recolouring each lap
+go run . tui --mod 11              # a closed path, recoloring each lap
 go run . tui --circle --mod 10     # trace the chords in sequence order
 ```
 
@@ -99,14 +99,28 @@ per row, joining up cleanly, however long it runs.
 
 A **closed path** is simply walked again from where it left off. It retraces
 exactly the same figure, so the geometry cannot change — but each circuit is
-drawn in the next colour, and the loop sweeps round instead of sitting there
-done. Colour is the only thing that can change on a closed figure, which is
+drawn in the next color, and the loop sweeps round instead of sitting there
+done. Color is the only thing that can change on a closed figure, which is
 precisely why it is worth changing.
+
+**What a color means** is a choice, `--tint`, and each mode is a different
+question about the same figure:
+
+| mode | |
+| --- | --- |
+| `step` | what the path does to each piece of itself: forward through the palette each time a step is walked again the same way, back when it is walked against it. The default, and the only one under which a closed figure reliably changes when it is redrawn |
+| `pass` | which walk of the period laid the step down |
+| `visits` | how many times a step has been walked — these paths draw most of themselves twice |
+| `heading` | which way the turtle was facing, four colors; the fourfold symmetry of a quarter-turn path becomes obvious |
+| `turn` | left or right, which is odd or even: the arithmetic itself, drawn onto the figure |
+| `term` | the residue that produced the step |
+| `age` | how far into the circuit it is — a band of color traveling round a closed path |
 
 ```
 go run . tui --mod 25            # open: scrolls
-go run . tui --mod 11            # closed: recolours in place
+go run . tui --mod 11            # closed: recolors in place
 go run . tui --trail comet       # a short tail chasing the head
+go run . turtle --mod 10 --tint heading
 ```
 
 | key | |
@@ -121,7 +135,8 @@ go run . tui --trail comet       # a short tail chasing the head
 | `v` | turtle path or circular design |
 | `m` | box-drawing characters or braille dots |
 | `f` | camera: auto, fit, follow |
-| `c` `r` `?` `q` | colour · restart · help · quit |
+| `c` | what a color means: step, pass, visits, heading, turn, term, age, off |
+| `r` `?` `q` | restart · help · quit |
 
 **Camera** defaults to auto, because the right answer is not a matter of taste:
 an open path has a head that runs away from you and the view has to keep up,
@@ -132,7 +147,7 @@ Three ways to keep up, in increasing order of how much they leave alone:
 
 | `--cam` | |
 |---|---|
-| `follow` | pins the head to the centre, so the whole drawing slides under it every frame |
+| `follow` | pins the head to the center, so the whole drawing slides under it every frame |
 | `scroll` | holds still until the head reaches a margin of the edge, then moves the least it can |
 | `page` | same, but shoves the view most of a screen at a time — still for longer, then one jump |
 
@@ -156,7 +171,7 @@ follow                          scroll
 ```
 
 **Trail** is how much stays on screen. `whole` keeps exactly one circuit for a
-closed path — so the figure stands complete and still while the colour moves
+closed path — so the figure stands complete and still while the color moves
 through it — and as much as memory allows for an open one. Shorter settings
 leave a comet tail behind the head. Trimming runs in batches: each trim shifts
 the slice down, so dropping one point per frame would copy the whole trail for
@@ -193,7 +208,7 @@ seq 0 1000 | while read n; do timeout 5 ./pisano tui --mod $n; done   # no
 
 A full-screen program takes the terminal over and puts it in **raw mode**, where
 Ctrl-C is no longer a signal — it is a keystroke the program has to choose to
-honour. In a loop that means each Ctrl-C ends one iteration and the shell
+honor. In a loop that means each Ctrl-C ends one iteration and the shell
 immediately starts the next, so a thousand of them takes a thousand interrupts
 to escape. `tui` therefore refuses to start unless stdin and stdout are both
 terminals.
@@ -201,13 +216,13 @@ terminals.
 ### Why Bubble Tea v2
 
 Bubble Tea v1 shipped a package `init()` that called `lipgloss.HasDarkBackground()`,
-which asks the terminal for its background colour (`OSC 11`) and waits up to
+which asks the terminal for its background color (`OSC 11`) and waits up to
 `termenv.OSCTimeout` — **five seconds** — for a reply. Because it was package
 initialisation it ran before `main()`, so it stalled *every* command in the
 binary, `period` and `gallery` included, on any terminal that does not answer.
 
 v2 deletes the workaround along with its cause: no `init()` anywhere in the
-module, and no dependency on lipgloss or termenv at all. Background colour is an
+module, and no dependency on lipgloss or termenv at all. Background color is an
 ordinary opt-in command whose answer arrives as a message, so nothing blocks and
 a terminal that never replies simply never sends one.
 
@@ -399,7 +414,7 @@ The same construction on Fibonacci remainders. Mod 5 uses every possible chord; 
 
 ### Fibonacci, modulus 10
 
-A period of 60 — far more chords than its neighbours, and still symmetrical.
+A period of 60 — far more chords than its neighbors, and still symmetrical.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/img/fib-10-dark.png">

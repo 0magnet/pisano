@@ -14,7 +14,7 @@ import (
 //
 // It refuses to start without an interactive terminal. A full-screen program
 // takes the terminal over and puts it in raw mode, where Ctrl-C is no longer a
-// signal but a keystroke the program itself has to honour — so one started by
+// signal but a keystroke the program itself has to honor — so one started by
 // mistake, from a pipeline or a shell loop, is markedly harder to get out of
 // than an ordinary command. Better to say so up front than to seize the screen
 // and hope.

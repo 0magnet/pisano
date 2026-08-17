@@ -121,7 +121,7 @@ var glyphs = [16]rune{
 	edgeN | edgeS | edgeE | edgeW: '┼',
 }
 
-// String renders the canvas, optionally with ANSI colour. Trailing blanks are
+// String renders the canvas, optionally with ANSI color. Trailing blanks are
 // dropped by finding the last drawn cell rather than by trimming the finished
 // string: once escape codes are in the line, its length no longer tells you
 // anything about what is on screen. That mismatch is exactly what drove the

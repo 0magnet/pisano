@@ -75,18 +75,18 @@ func TestClosedPathKeepsWalking(t *testing.T) {
 	}
 }
 
-// Re-walking a closed path has to actually recolour it, or there is nothing to
-// watch: the geometry is identical lap to lap, so colour is the only thing that
+// Re-walking a closed path has to actually recolor it, or there is nothing to
+// watch: the geometry is identical lap to lap, so color is the only thing that
 // can change.
-func TestRewalkingRecolours(t *testing.T) {
+func TestRewalkingRecolors(t *testing.T) {
 	m := frames(t, Options{Mod: 11, Speed: 4}, 80, 24, 5)
 	seen := map[string]bool{}
 	for i := 0; i < 300; i++ {
 		m = m.tick(1)
-		seen[m.segColor(len(m.ptPass)-1)] = true
+		seen[m.segColor(len(m.ptTint)-1)] = true
 	}
 	if len(seen) < 2 {
-		t.Errorf("the head kept one colour across %d laps", m.walk.pass)
+		t.Errorf("the head kept one color across %d laps", m.walk.pass)
 	}
 }
 
@@ -96,7 +96,10 @@ func TestWholeTrailHoldsOneCircuit(t *testing.T) {
 	m := frames(t, Options{Mod: 11, Speed: 8, Trail: "whole"}, 80, 24, 5)
 	want := m.movesPerPass*m.shape.Periods + 1
 	m = m.tick(400)
-	if slack := max(64, want/8); len(m.pts) > want+slack {
+	// "About" has to mean about, not "within sixty-four points of": a circuit
+	// here is around forty points, and a slack of sixty-four would let four
+	// laps pile up on screen while this still passed.
+	if len(m.pts) > want+max(4, want/8) {
 		t.Errorf("held %d points, want about %d", len(m.pts), want)
 	}
 	if m.dropped == 0 {

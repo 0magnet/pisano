@@ -13,7 +13,7 @@ import (
 //
 // cobra renders help by executing a template, and a template reaches its data
 // through reflection: every {{.UsageString}}, every {{if .HasExample}}, every
-// styling function a colouriser adds is a reflect call. TinyGo does not
+// styling function a colorizer adds is a reflect call. TinyGo does not
 // implement enough of reflect for that, and does not fail quietly —
 //
 //	panic: unimplemented: (reflect.Type).NumOut()
@@ -28,7 +28,7 @@ import (
 // browser build can be kept — the alternative was shipping only the standard Go
 // build, at four times the download.
 
-// Styles are the colours the help is drawn in: bright blue throughout, bold for
+// Styles are the colors the help is drawn in: bright blue throughout, bold for
 // anything that is a name and plain for anything that describes one.
 const (
 	styleHeading = "\x1b[94;1m"
@@ -42,7 +42,7 @@ const (
 const minNamePadding = 11
 
 // paint wraps s in a style, or returns it as it is when the output is not going
-// somewhere that can show colour.
+// somewhere that can show color.
 func paint(style, s string) string {
 	if !Color || s == "" {
 		return s
@@ -96,7 +96,7 @@ func writeUsage(w io.Writer, cmd *cobra.Command, usage bool) {
 				continue
 			}
 			// The padding is measured on the name, not on the name plus the
-			// escapes that colour it, or a coloured listing would not line up.
+			// escapes that color it, or a colored listing would not line up.
 			pad := strings.Repeat(" ", max(width-len(sub.Name()), 0))
 			fmt.Fprintf(w, "  %s%s %s\n",
 				paint(styleName, sub.Name()), pad, paint(styleDescr, sub.Short))
@@ -140,9 +140,9 @@ func namePadding(cmd *cobra.Command) int {
 	return width
 }
 
-// flagUsages is pflag's own listing, coloured.
+// flagUsages is pflag's own listing, colored.
 //
-// pflag lays the block out and wraps it; re-implementing that to insert colour
+// pflag lays the block out and wraps it; re-implementing that to insert color
 // would be re-implementing it to get it subtly wrong, so the lines it produces
 // are painted afterwards. A line it formats differently than expected is passed
 // through as it stands rather than mangled.

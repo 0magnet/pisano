@@ -7,10 +7,10 @@ import (
 
 // ANSI styling, written out directly rather than through a styling library.
 //
-// The canvas renderers already emit raw SGR codes for the path colours, so the
+// The canvas renderers already emit raw SGR codes for the path colors, so the
 // chrome using the same mechanism means one way of doing it rather than two.
 // It also drops the dependency chain — lipgloss, and termenv underneath it —
-// whose package initialisation queried the terminal for its background colour
+// whose package initialisation queried the terminal for its background color
 // and blocked for five seconds when nothing answered.
 //
 // These are the standard bright ANSI slots rather than fixed RGB, so they keep
@@ -23,7 +23,7 @@ const (
 	sgrWarn  = "\x1b[93m"   // bright yellow
 )
 
-// paint wraps s unless colour is off. Nested spans reset back to the outer
+// paint wraps s unless color is off. Nested spans reset back to the outer
 // style rather than to plain, so a highlighted key inside a dim line leaves the
 // rest of that line dim.
 func (m Model) paint(code, s string) string {
@@ -56,7 +56,7 @@ func height(s string) int { return strings.Count(s, "\n") + 1 }
 // terminal wraps it — and then the chrome occupies more rows than the layout
 // budgeted, pushing the top of the drawing off the screen. The escape sequences
 // have to be skipped rather than counted, since they take no space, and a
-// truncated line has to be closed off so its colour does not leak.
+// truncated line has to be closed off so its color does not leak.
 func clip(s string, w int) string {
 	if w < 1 {
 		return ""

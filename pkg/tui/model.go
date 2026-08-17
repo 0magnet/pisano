@@ -3,7 +3,7 @@
 //
 // The walk never finishes. An open path drifts forever by its nature, and a
 // closed one is walked again from where it left off — retracing exactly the
-// same figure, but in the next colour, so the loop sweeps round rather than
+// same figure, but in the next color, so the loop sweeps round rather than
 // sitting there finished. Either way the drawing keeps only its most recent
 // stretch: the oldest of it is dropped as the turtle moves on, which is what
 // lets it run indefinitely at a fixed size in a fixed amount of memory.
@@ -51,7 +51,7 @@ const (
 // Follow, scroll and page all keep up, in increasing order of how much they
 // leave alone:
 //
-//   - follow pins the head to the centre, so the entire drawing slides under it
+//   - follow pins the head to the center, so the entire drawing slides under it
 //     on every frame. It is exact and unwatchable: nothing ever holds still, and
 //     the head's wandering within a motif shakes the whole screen.
 //   - scroll leaves the view where it is until the head reaches a margin of the
@@ -75,7 +75,7 @@ const brailleScale = 6
 
 // trails is how much of the path stays on screen, cycled with t. Zero means
 // keep the whole figure: for a closed path that is exactly one full circuit, so
-// the shape stands still while the colour sweeps around it; for an open path
+// the shape stands still while the color sweeps around it; for an open path
 // there is no such thing, so it falls back to the memory limit.
 var trails = []struct {
 	name string
@@ -117,17 +117,22 @@ type walker struct {
 	i    int  // next index into the run currently being consumed
 	head bool // still working through the run-in
 	pass int  // completed passes of the repeating block
+	n    int  // steps taken, for tints that care where in the walk they are
 }
 
 func newWalker(p pisano.Period) *walker {
 	return &walker{p: p, head: len(p.Head) > 0}
 }
 
-// next consumes one term. It reports the turtle's position, whether the term
-// moved it at all — a zero term does not — and which pass the term belonged
-// to, which is what the colouring is keyed on.
-func (w *walker) next() (pisano.Pt, bool, int) {
+// next consumes one term and reports the step it made, if it made one — a zero
+// term moves the turtle nowhere. The step carries everything a color can be
+// keyed on, which is what lets the viewer offer the same tints the static
+// renderer does.
+func (w *walker) next() (pisano.Step, bool) {
 	pass := w.pass
+	if w.head {
+		pass = -1
+	}
 
 	var term int
 	switch {
@@ -138,7 +143,7 @@ func (w *walker) next() (pisano.Pt, bool, int) {
 			w.head, w.i = false, 0
 		}
 	case len(w.p.Terms) == 0:
-		return w.t.Pos, false, pass
+		return pisano.Step{}, false
 	default:
 		term = w.p.Terms[w.i]
 		w.i++
@@ -147,8 +152,15 @@ func (w *walker) next() (pisano.Pt, bool, int) {
 		}
 	}
 
-	moved := w.t.Step(term)
-	return w.t.Pos, moved, pass
+	from := w.t.Pos
+	if !w.t.Step(term) {
+		return pisano.Step{}, false
+	}
+	w.n++
+	return pisano.Step{
+		From: from, To: w.t.Pos, Term: term,
+		Pass: pass, Dir: w.t.Dir, Index: w.n - 1,
+	}, true
 }
 
 // Model is the viewer state.
@@ -171,8 +183,10 @@ type Model struct {
 
 	walk    *walker
 	pts     []pisano.Pt
-	ptPass  []int // which pass laid down each point
-	dropped int   // points aged out of the trail
+	ptTint  []int // the color index of the step that reached each point
+	tinter  *pisano.Tinter
+	tintIx  int // which tint mode, an index into pisano.TintModes()
+	dropped int // points aged out of the trail
 
 	// head and hold belong to the circular view, which traces a fixed figure
 	// rather than walking an open-ended one.
@@ -217,6 +231,7 @@ type Options struct {
 	Render string // box, braille
 	Cam    string // auto, fit, follow, scroll, page
 	Trail  string // whole, long, short, comet
+	Tint   string // what a color means; see pisano.TintNames
 	Circle bool
 	Paused bool
 	Cycle  time.Duration // advance the modulus on its own every so often
@@ -257,6 +272,13 @@ func New(opt Options) Model {
 	for i, t := range trails {
 		if t.name == opt.Trail {
 			m.trailIx = i
+		}
+	}
+	if mode, err := pisano.ParseTint(opt.Tint); err == nil {
+		for i, t := range pisano.TintModes() {
+			if t == mode {
+				m.tintIx = i
+			}
 		}
 	}
 	if opt.Circle {
@@ -349,7 +371,7 @@ func (m *Model) updateCamera() {
 }
 
 // trailLen is how many points to keep. For a closed path "whole" is one full
-// circuit exactly, so the figure stands complete and still while the colour
+// circuit exactly, so the figure stands complete and still while the color
 // moves through it. An open path has no full circuit, so it keeps as much as
 // memory allows and lets the camera do the rest.
 func (m Model) trailLen() int {
@@ -405,7 +427,8 @@ func countMoves(terms []int) int {
 func (m *Model) restart() {
 	m.walk = newWalker(m.period)
 	m.pts = append(m.pts[:0], pisano.Pt{})
-	m.ptPass = append(m.ptPass[:0], 0)
+	m.ptTint = append(m.ptTint[:0], 0)
+	m.newTinter()
 	m.dropped = 0
 	m.head = 0
 	m.hold = 0
@@ -417,6 +440,27 @@ func (m *Model) restart() {
 	if m.shape.Closed && m.movesPerPass > 0 {
 		m.advance(m.movesPerPass * m.shape.Periods)
 	}
+}
+
+// newTinter starts the coloring over. A sweep of the palette spans one
+// circuit, so the age gradient travels round a closed figure once per lap.
+func (m *Model) newTinter() {
+	span := m.movesPerPass
+	if m.shape.Closed && m.shape.Periods > 0 {
+		span = m.movesPerPass * m.shape.Periods
+	}
+	m.tinter = pisano.NewTinter(pisano.TintModes()[m.tintIx], len(passColors), span)
+}
+
+// retint changes what the colors mean, which means walking again.
+//
+// Two of the modes count what the walk has already done, so the color of a
+// step on screen is a function of every step before it — including the ones
+// that have already scrolled off. There is no recoloring the trail in place
+// without replaying the whole walk, so it is replayed: the figure redraws from
+// the start in the new reading, which for a closed path is instant.
+func (m *Model) retint() {
+	m.restart()
 }
 
 // advance walks n terms and drops whatever has aged out of the trail.
@@ -442,12 +486,12 @@ func (m *Model) advance(n int) {
 	}
 
 	for i := 0; i < n; i++ {
-		p, moved, pass := m.walk.next()
+		step, moved := m.walk.next()
 		if !moved {
 			continue
 		}
-		m.pts = append(m.pts, p)
-		m.ptPass = append(m.ptPass, pass)
+		m.pts = append(m.pts, step.To)
+		m.ptTint = append(m.ptTint, m.tinter.Tint(step))
 	}
 	m.trim()
 }
@@ -457,13 +501,19 @@ func (m *Model) advance(n int) {
 // time would copy the entire trail on every tick for the sake of one element.
 func (m *Model) trim() {
 	limit := m.trailLen()
-	slack := max(64, limit/8)
+	// The slack is a fraction of the trail, not a fixed count. A flat floor of
+	// sixty-four points is nothing against a long trail and four whole circuits
+	// against a short one: a closed figure asking for one circuit of seventeen
+	// points was holding eighty-one, so five laps were on screen at once, in
+	// five different colors, and the figure looked like a fixed patchwork
+	// rather than something being redrawn.
+	slack := max(4, limit/8)
 	if len(m.pts) <= limit+slack {
 		return
 	}
 	drop := len(m.pts) - limit
 	m.pts = append(m.pts[:0], m.pts[drop:]...)
-	m.ptPass = append(m.ptPass[:0], m.ptPass[drop:]...)
+	m.ptTint = append(m.ptTint[:0], m.ptTint[drop:]...)
 	m.dropped += drop
 }
 
@@ -592,7 +642,17 @@ func (m *Model) apply(name string) {
 		m.trailIx = (m.trailIx + 1) % len(trails)
 		m.trim()
 	case "c":
-		m.color = !m.color
+		// One key for the whole question of color: step through the modes,
+		// then off, then round again.
+		if !m.color {
+			m.color = true
+			m.tintIx = 0
+		} else if m.tintIx+1 < len(pisano.TintModes()) {
+			m.tintIx++
+		} else {
+			m.color = false
+		}
+		m.retint()
 	case "r":
 		m.restart()
 	case "?":

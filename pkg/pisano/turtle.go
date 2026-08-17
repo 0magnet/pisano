@@ -117,6 +117,35 @@ func Path(terms []int, passes int) []Pt {
 // It also returns, for each segment, which pass laid it down, so a renderer can
 // tint the passes apart.
 func PathOf(p Period, passes int) (pts []Pt, pass []int) {
+	steps := Walk(p, passes)
+	pts = make([]Pt, 0, len(steps)+1)
+	pass = make([]int, 0, len(steps))
+	if len(steps) == 0 {
+		return []Pt{{}}, nil
+	}
+	pts = append(pts, steps[0].From)
+	for _, s := range steps {
+		pts = append(pts, s.To)
+		pass = append(pass, s.Pass)
+	}
+	return pts, pass
+}
+
+// Step is one move of the walk, with everything about it that a color could be
+// keyed on: where it went, what moved it, and where it was in the walk.
+type Step struct {
+	From, To Pt
+	Term     int // the term of the sequence that produced it
+	Pass     int // which walk of the repeating block, or -1 for the run-in
+	Dir      int // the heading it moved in, east through north
+	Index    int // how many steps came before it
+}
+
+// Walk walks a whole period: the run-in once, then the repeating block as many
+// times as asked, reporting every move it makes. Terms that do not move the
+// turtle — the zeros — produce no step, which is why a pass contributes fewer
+// steps than it has terms.
+func Walk(p Period, passes int) []Step {
 	if passes < 1 {
 		passes = 1
 	}
@@ -127,22 +156,26 @@ func PathOf(p Period, passes int) (pts []Pt, pass []int) {
 	}
 
 	t := Turtle{}
-	pts = []Pt{t.Pos}
-	for _, term := range p.Head {
-		if t.Step(term) {
-			pts = append(pts, t.Pos)
-			pass = append(pass, -1) // run-in, not part of any pass
+	steps := make([]Step, 0, (len(p.Head) + len(p.Terms)*passes))
+	move := func(term, pass int) {
+		from := t.Pos
+		if !t.Step(term) {
+			return
 		}
+		steps = append(steps, Step{
+			From: from, To: t.Pos, Term: term,
+			Pass: pass, Dir: t.Dir, Index: len(steps),
+		})
+	}
+	for _, term := range p.Head {
+		move(term, -1)
 	}
 	for i := 0; i < passes; i++ {
 		for _, term := range p.Terms {
-			if t.Step(term) {
-				pts = append(pts, t.Pos)
-				pass = append(pass, i)
-			}
+			move(term, i)
 		}
 	}
-	return pts, pass
+	return steps
 }
 
 // Passes is how many times to walk the period for a given render: whatever it
@@ -159,8 +192,9 @@ func (s Shape) Passes(reps int) int {
 
 // TurtleOptions controls the terminal renderer.
 type TurtleOptions struct {
-	Reps     int  // passes to draw for paths that never close
-	Colorize bool // tint each pass differently
+	Reps     int      // passes to draw for paths that never close
+	Colorize bool     // draw in color at all
+	Tint     TintMode // what a color means
 }
 
 // passColors tint successive passes so an open path shows how it repeats.
@@ -171,9 +205,14 @@ var passColors = []string{
 // RenderTurtle draws the path for a period as terminal text.
 func RenderTurtle(p Period, opt TurtleOptions) (string, Shape) {
 	shape := Classify(p.Terms)
-	pts, pass := PathOf(p, shape.Passes(opt.Reps))
-	if len(pts) < 2 {
+	steps := Walk(p, shape.Passes(opt.Reps))
+	if len(steps) < 1 {
 		return "", shape
+	}
+	pts := make([]Pt, 0, len(steps)+1)
+	pts = append(pts, steps[0].From)
+	for _, s := range steps {
+		pts = append(pts, s.To)
 	}
 
 	// A horizontal unit spans two columns so the drawing comes out square in
@@ -198,13 +237,22 @@ func RenderTurtle(p Period, opt TurtleOptions) (string, Shape) {
 
 	c := NewCanvas(minX, minY, maxX, maxY)
 
-	for i := 0; i < len(pts)-1; i++ {
+	// A sweep of the palette spans one circuit, so an age gradient goes round
+	// the figure exactly once. A closed path is drawn for the one circuit that
+	// closes it; an open one is drawn for Reps passes, and a pass is its
+	// circuit.
+	circuits := 1
+	if !shape.Closed {
+		circuits = shape.Passes(opt.Reps)
+	}
+	tinter := NewTinter(opt.Tint, len(passColors), len(steps)/circuits)
+
+	for _, s := range steps {
 		col := ""
-		if opt.Colorize && pass[i] >= 0 {
-			col = passColors[pass[i]%len(passColors)]
+		if idx := tinter.Tint(s); opt.Colorize && idx >= 0 {
+			col = passColors[idx]
 		}
-		a, b := pts[i], pts[i+1]
-		c.Segment(a.X*2, a.Y, b.X*2, b.Y, col)
+		c.Segment(s.From.X*2, s.From.Y, s.To.X*2, s.To.Y, col)
 	}
 	return c.String(opt.Colorize), shape
 }

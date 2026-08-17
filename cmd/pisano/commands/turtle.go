@@ -22,6 +22,7 @@ var turtleCmd = func() *cobra.Command {
 		bypass bool
 		grid   bool
 		plain  bool
+		tint   string
 		limit  int
 		theme  string
 	)
@@ -53,9 +54,10 @@ figure that looks like a plus sign.`,
 	cmd.Flags().IntVar(&cell, "cell", 180, "pixels per design when writing a file")
 	cmd.Flags().IntVar(&cols, "cols", 0, "designs per row; 0 for a square sheet")
 	cmd.Flags().BoolVar(&labels, "labels", true, "caption each design")
-	cmd.Flags().BoolVar(&bypass, "bypass", false, "give each pass its own colour")
+	cmd.Flags().BoolVar(&bypass, "bypass", false, "give each pass its own color")
 	cmd.Flags().BoolVar(&grid, "grid", false, "faint lattice behind each path")
-	cmd.Flags().BoolVar(&plain, "plain", false, "no ANSI colour in the terminal")
+	cmd.Flags().BoolVar(&plain, "plain", false, "no ANSI color in the terminal")
+	cmd.Flags().StringVar(&tint, "tint", "step", "what a color means: "+pisano.TintNames())
 	cmd.Flags().IntVarP(&limit, "cap", "c", 0, "term limit for sequences that may not repeat")
 	cmd.Flags().StringVar(&theme, "theme", "auto", "palette: auto, light, dark")
 
@@ -70,6 +72,10 @@ figure that looks like a plus sign.`,
 		if err != nil {
 			return err
 		}
+		tintMode, err := pisano.ParseTint(tint)
+		if err != nil {
+			return err
+		}
 		periods, err := turtlePeriods(s, mod, limit)
 		if err != nil {
 			return err
@@ -81,7 +87,7 @@ figure that looks like a plus sign.`,
 					fmt.Fprintln(stdout)
 				}
 				art, shape := pisano.RenderTurtle(p, pisano.TurtleOptions{
-					Reps: reps, Colorize: !plain,
+					Reps: reps, Colorize: !plain, Tint: tintMode,
 				})
 				what := p.Seq
 				if p.Modulus > 0 {
@@ -97,6 +103,7 @@ figure that looks like a plus sign.`,
 			Sheet:   pisano.Sheet{Cell: cell, Cols: cols, Labels: labels, Theme: th},
 			Reps:    reps,
 			ByPass:  bypass,
+			Tint:    tintMode,
 			Grid:    grid,
 			Rounded: true,
 		}

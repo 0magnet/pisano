@@ -16,10 +16,11 @@ import (
 // are square units on both axes.
 type TurtleSVGOptions struct {
 	Sheet
-	Reps     int  // passes to draw for paths that never close
-	ByPass   bool // give each pass its own colour
-	Grid     bool // faint lattice behind the path
-	Rounded  bool // round the corners rather than mitring them
+	Reps     int      // passes to draw for paths that never close
+	ByPass   bool     // color the path rather than drawing it in one stroke
+	Tint     TintMode // what a color means
+	Grid     bool     // faint lattice behind the path
+	Rounded  bool     // round the corners rather than mitring them
 	Weight   float64
 	CloseGap bool // join the last point back to the first on a closed path
 }
@@ -38,7 +39,8 @@ func DefaultTurtleSVG() TurtleSVGOptions {
 // and stretching it to fit would misreport its shape.
 func TurtleTile(p Period, opt TurtleSVGOptions) (Tile, Shape) {
 	shape := Classify(p.Terms)
-	pts, pass := PathOf(p, shape.Passes(opt.Reps))
+	steps := Walk(p, shape.Passes(opt.Reps))
+	pts, _ := PathOf(p, shape.Passes(opt.Reps))
 	size := opt.TileSize()
 	if len(pts) < 2 {
 		return Tile{Caption: TurtleCaption(p, shape), Size: size}, shape
@@ -73,7 +75,7 @@ func TurtleTile(p Period, opt TurtleSVGOptions) (Tile, Shape) {
 		scale = usable // a path with no extent at all
 	}
 
-	// Centre whatever the path's true aspect turns out to be.
+	// Center whatever the path's true aspect turns out to be.
 	offX := inset + (usable-spanX*scale)/2 - float64(minX)*scale
 	offY := inset + (usable-spanY*scale)/2 - float64(minY)*scale
 	at := func(q Pt) (float64, float64) {
@@ -123,14 +125,26 @@ func TurtleTile(p Period, opt TurtleSVGOptions) (Tile, Shape) {
 	if !opt.ByPass {
 		write("", 0, len(pts)-1)
 	} else {
+		// One subpath per run of steps sharing a color. The same tinter the
+		// terminal uses decides what that color is, so --tint means the same
+		// thing wherever the figure is drawn.
+		circuits := 1
+		if !shape.Closed {
+			circuits = shape.Passes(opt.Reps)
+		}
+		tinter := NewTinter(opt.Tint, 6, len(steps)/circuits)
+		tint := make([]int, len(steps))
+		for i, st := range steps {
+			tint[i] = tinter.Tint(st)
+		}
 		start := 0
-		for i := 0; i < len(pass); i++ {
-			if i+1 < len(pass) && pass[i+1] == pass[i] {
+		for i := range tint {
+			if i+1 < len(tint) && tint[i+1] == tint[i] {
 				continue
 			}
 			cls := ""
-			if pass[i] >= 0 {
-				cls = fmt.Sprintf("p%d", pass[i]%6)
+			if tint[i] >= 0 {
+				cls = fmt.Sprintf("p%d", tint[i])
 			}
 			write(cls, start, i+1)
 			start = i + 1
