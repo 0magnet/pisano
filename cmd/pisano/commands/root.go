@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 // RootCmd is the pisano command tree. It is exported so the root pisano.go can
@@ -59,6 +60,7 @@ func Execute() {
 // calls: a shell applet has arguments and a pair of pipes, not os.Args and a
 // process to exit.
 func Run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+	prepare(RootCmd, ctx)
 	RootCmd.SetArgs(args)
 	RootCmd.SetOut(stdout)
 	RootCmd.SetErr(stderr)
@@ -67,4 +69,42 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		return 1
 	}
 	return 0
+}
+
+// prepare makes the tree ready to run again, which it is not by default.
+//
+// The tree is built once, at init, and it keeps two things between runs. A
+// process that runs one command and exits never sees either; a browser runs a
+// hundred in the same process, where both are wrong.
+//
+// The first is flag values, which live in the closures that registered them and
+// stay set. That is why `pisano tui --cycle 5s` followed by `pisano tui --mod
+// 109` still stepped through the moduli on its own: nothing had put --cycle
+// back. It applies to every flag, not just that one.
+//
+// The second is worse and quieter. cobra copies the root's context onto the
+// subcommand it dispatches to, but only if the subcommand has none —
+//
+//	if cmd.ctx == nil {
+//		cmd.ctx = c.ctx
+//	}
+//
+// — so the second run of a subcommand keeps the first run's context, and with
+// it the first run's Host: its filesystem, its working directory, its terminal.
+// Two terminals open in a page would have written each other's files.
+func prepare(cmd *cobra.Command, ctx context.Context) {
+	cmd.SetContext(ctx)
+	cmd.Flags().VisitAll(func(f *pflag.Flag) {
+		if !f.Changed {
+			return
+		}
+		// Set is the only way back: the default is kept as the string it was
+		// registered with, which is exactly what the parser would have been
+		// handed had the flag been given explicitly.
+		_ = f.Value.Set(f.DefValue)
+		f.Changed = false
+	})
+	for _, sub := range cmd.Commands() {
+		prepare(sub, ctx)
+	}
 }
