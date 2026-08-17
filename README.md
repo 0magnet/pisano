@@ -21,6 +21,9 @@ go run . gallery
 
 ## What it draws
 
+Every example below has a **▸** link beside it. They open the browser build and
+run the command, so nothing has to be installed to see what it does.
+
 **Circular designs.** Space m points evenly around a circle, label them with the
 possible remainders, and join them in the order the remainders appear. Output is
 SVG, one figure or a whole contact sheet.
@@ -30,6 +33,9 @@ go run . circle --mod 1-40 -o sheet.svg
 go run . circle --mod 8,13,21,34,55,89 --cols 3 --cell 260 -o families.svg
 ```
 
+▸ [the sheet](https://0magnet.github.io/pisano/?run=pisano%20circle%20--mod%201-40%20-o%20sheet.svg%20%26%26%20view%20sheet.svg)
+· [the families](https://0magnet.github.io/pisano/?run=pisano%20circle%20--mod%208%2C13%2C21%2C34%2C55%2C89%20--cols%203%20--cell%20260%20-o%20families.svg%20%26%26%20view%20families.svg)
+
 **Turtle paths.** Read each term as an instruction: odd turns left and steps
 forward, even turns right and steps forward, zero does neither. Terminal text by
 default, SVG or HTML with `--out`.
@@ -37,10 +43,16 @@ default, SVG or HTML with `--out`.
 ```
 go run . turtle --mod 10                      # box-drawing characters
 go run . turtle --mod 0                       # no modulus at all — the plus sign
+go run . turtle --mod 25 --tint heading       # colored by which way it was facing
 go run . turtle --mod 1-40 -o paths.svg       # vector
 go run . turtle --mod 1-40 -o paths.html      # page of inline SVG
-go run . turtle --mod 8,21,55 --split web/     # one file each, for a site
+go run . turtle --mod 8,21,55 --split web/    # one file each, for a site
 ```
+
+▸ [`--mod 10`](https://0magnet.github.io/pisano/?run=pisano%20turtle%20--mod%2010)
+· [`--mod 0`](https://0magnet.github.io/pisano/?run=pisano%20turtle%20--mod%200)
+· [`--tint heading`](https://0magnet.github.io/pisano/?run=pisano%20turtle%20--mod%2025%20--tint%20heading)
+· [the vector sheet](https://0magnet.github.io/pisano/?run=pisano%20turtle%20--mod%201-40%20-o%20paths.svg%20%26%26%20view%20paths.svg)
 
 **Watch it draw.** `tui` opens the designs in the alternate screen and animates
 them. This is the one for paths that never close — see below.
@@ -50,6 +62,10 @@ go run . tui                       # fib mod 25, an open path, scrolling
 go run . tui --mod 11              # a closed path, recoloring each lap
 go run . tui --circle --mod 10     # trace the chords in sequence order
 ```
+
+▸ [the open path](https://0magnet.github.io/pisano/?run=pisano%20tui)
+· [the closed one](https://0magnet.github.io/pisano/?run=pisano%20tui%20--mod%2011)
+· [the chords](https://0magnet.github.io/pisano/?run=pisano%20tui%20--circle%20--mod%2010)
 
 **Everything at once.** `gallery` builds a single self-contained page holding
 every figure the video walks through, in the order it introduces them, and
@@ -66,6 +82,9 @@ $ go run . period --mod 10
 fib mod 10: period 60, 4 zero(s)
   terms:  [0 1 1 2 3 5 8 3 1 4 5 9 4 3 7 0 7 7 4 1 5 6 1 7 8 5 3 8 1 9 ...]
 ```
+
+▸ [the period](https://0magnet.github.io/pisano/?run=pisano%20period%20--mod%2010)
+· [the sweep](https://0magnet.github.io/pisano/?run=pisano%20sweep%20--max%20300)
 
 ## Output formats
 
@@ -334,6 +353,28 @@ the file *is* the hand-off and `view` only has to name it. The dependency points
 pisano → [desk](https://github.com/0magnet/desk); desk knows nothing about
 pisano, which is why the command lives in `web/app` and both binaries register
 it.
+
+### Linking to a command
+
+`?run=` carries a command into the page. It is submitted once the shell is up,
+as though typed — echoed after the prompt, added to the history, run — so what
+ran is on the screen and not only in the address bar.
+
+```
+https://0magnet.github.io/pisano/?run=pisano+turtle+--mod+25
+https://0magnet.github.io/pisano/?run=pisano+circle+--mod+8,13,21,34+-o+s.svg+%26%26+view+s.svg
+https://0magnet.github.io/pisano/?run=first&run=second
+```
+
+One parameter is one line, and repeating it runs them in order. `&&` needs
+encoding as `%26%26`, since a bare `&` separates parameters. The query string
+rather than the fragment, because a fragment is never sent anywhere and these
+are meant to be shared. Only the terminal the page opens with runs them; a
+second terminal opened from the panel starts at a clean prompt.
+
+It runs whatever it is given, in a shell over a filesystem that exists only in
+the tab — but it is still a link that executes something, so read one before
+clicking it, as you would any other.
 
 The terminal and the shell are **[websh](https://github.com/0magnet/websh)** —
 [xterm-go](https://github.com/0magnet/xterm-go), a real Bash interpreter, and a

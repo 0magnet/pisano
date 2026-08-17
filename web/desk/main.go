@@ -17,6 +17,7 @@
 package main
 
 import (
+	"strings"
 	"syscall/js"
 
 	"github.com/0magnet/desk"
@@ -39,6 +40,11 @@ func main() {
 		desk.SetRoot(el)
 	}
 
+	// Commands the page was linked with. They are submitted once the shell is
+	// up, as though typed, so what ran is on the screen rather than only in the
+	// address bar.
+	linked := linkedCommands()
+
 	desk.Register(desk.App{
 		Name:      "term",
 		Maximized: true,
@@ -46,8 +52,16 @@ func main() {
 		Help:      "a shell with the pisano commands",
 		Width:     780,
 		Height:    470,
-		Open: func([]string) (desk.Pane, error) {
-			return term.New(greeting, "pisano"), nil
+		Open: func(args []string) (desk.Pane, error) {
+			p := term.New(greeting, "pisano")
+			if len(args) > 0 {
+				return p.Run(strings.Join(args, " ")), nil
+			}
+			// Only the terminal the page opens with runs them. A second one,
+			// opened from the panel later, starts at a clean prompt.
+			p.Run(linked...)
+			linked = nil
+			return p, nil
 		},
 	})
 	desk.Register(desk.App{
@@ -75,4 +89,50 @@ func main() {
 		js.Global().Get("console").Call("error", err.Error())
 	}
 	select {}
+}
+
+// Limits on what a link may carry. A URL is not a script: these are generous
+// for a demonstration and small enough that a malformed or hostile link cannot
+// leave the page grinding through it.
+const (
+	maxLinkedCommands = 10
+	maxLinkedLength   = 400
+)
+
+// linkedCommands reads the commands a link asked for.
+//
+//	https://0magnet.github.io/pisano/?run=pisano+turtle+--mod+25
+//	…?run=pisano+circle+--mod+8,13,21,34+-o+s.svg+%26%26+view+s.svg
+//	…?run=first&run=second          one parameter per line, in order
+//
+// The query string rather than the fragment, because a fragment is not sent
+// anywhere and this is meant to be shared. Newlines are stripped so that one
+// parameter is one line: a link that wants two commands says so twice, where
+// it can be seen in the URL.
+func linkedCommands() []string {
+	loc := js.Global().Get("location")
+	if !loc.Truthy() {
+		return nil
+	}
+	params := js.Global().Get("URLSearchParams")
+	if !params.Truthy() {
+		return nil
+	}
+	all := params.New(loc.Get("search")).Call("getAll", "run")
+	if !all.Truthy() {
+		return nil
+	}
+
+	out := make([]string, 0, all.Length())
+	for i := 0; i < all.Length() && len(out) < maxLinkedCommands; i++ {
+		line := strings.TrimSpace(strings.NewReplacer("\r", " ", "\n", " ").Replace(all.Index(i).String()))
+		if line == "" {
+			continue
+		}
+		if len(line) > maxLinkedLength {
+			line = line[:maxLinkedLength]
+		}
+		out = append(out, line)
+	}
+	return out
 }
