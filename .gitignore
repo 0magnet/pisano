@@ -2,3 +2,8 @@
 /out/
 web/web
 web/desk/desk
+
+# Local agent config: the MCP server and its permissions are per-machine,
+# and the index it builds lives in ~/.cache rather than here.
+.mcp.json
+.claude/settings.local.json
