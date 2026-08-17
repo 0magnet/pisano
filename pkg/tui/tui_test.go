@@ -68,10 +68,10 @@ func TestClosedPathKeepsWalking(t *testing.T) {
 	if !m.shape.Closed {
 		t.Fatal("fib mod 11 should be closed")
 	}
-	before := m.walk.pass
+	before := m.walk.Pass()
 	m = m.tick(200)
-	if m.walk.pass <= before {
-		t.Errorf("lap count stuck at %d after 200 ticks", m.walk.pass)
+	if m.walk.Pass() <= before {
+		t.Errorf("lap count stuck at %d after 200 ticks", m.walk.Pass())
 	}
 }
 
@@ -86,7 +86,7 @@ func TestRewalkingRecolors(t *testing.T) {
 		seen[m.segColor(len(m.ptTint)-1)] = true
 	}
 	if len(seen) < 2 {
-		t.Errorf("the head kept one color across %d laps", m.walk.pass)
+		t.Errorf("the head kept one color across %d laps", m.walk.Pass())
 	}
 }
 
@@ -119,8 +119,8 @@ func TestOpenPathKeepsDrifting(t *testing.T) {
 	if first == last {
 		t.Error("the head never moved")
 	}
-	if m.walk.pass < 2 {
-		t.Errorf("only %d passes walked", m.walk.pass)
+	if m.walk.Pass() < 2 {
+		t.Errorf("only %d passes walked", m.walk.Pass())
 	}
 }
 

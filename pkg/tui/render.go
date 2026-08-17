@@ -117,7 +117,7 @@ func (m Model) footer() string {
 		progress = fmt.Sprintf("step %d/%d", m.head, m.period.Len())
 	} else {
 		progress = fmt.Sprintf("lap %d · %d pts · %s",
-			m.walk.pass, len(m.pts), trails[m.trailIx].name)
+			m.walk.Pass(), len(m.pts), trails[m.trailIx].name)
 		if m.dropped > 0 {
 			progress += fmt.Sprintf(" (%d aged out)", m.dropped)
 		}

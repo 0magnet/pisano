@@ -107,62 +107,6 @@ var sequences = []seqEntry{
 	{"prime", func(int) pisano.Sequence { return pisano.Primes() }},
 }
 
-// walker keeps a turtle mid-stride so the path can be extended one term at a
-// time. The viewer runs indefinitely, so recomputing the path from the start
-// on every frame is not an option; and stepping by whole passes would make the
-// drawing jump rather than crawl.
-type walker struct {
-	t    pisano.Turtle
-	p    pisano.Period
-	i    int  // next index into the run currently being consumed
-	head bool // still working through the run-in
-	pass int  // completed passes of the repeating block
-	n    int  // steps taken, for tints that care where in the walk they are
-}
-
-func newWalker(p pisano.Period) *walker {
-	return &walker{p: p, head: len(p.Head) > 0}
-}
-
-// next consumes one term and reports the step it made, if it made one — a zero
-// term moves the turtle nowhere. The step carries everything a color can be
-// keyed on, which is what lets the viewer offer the same tints the static
-// renderer does.
-func (w *walker) next() (pisano.Step, bool) {
-	pass := w.pass
-	if w.head {
-		pass = -1
-	}
-
-	var term int
-	switch {
-	case w.head:
-		term = w.p.Head[w.i]
-		w.i++
-		if w.i >= len(w.p.Head) {
-			w.head, w.i = false, 0
-		}
-	case len(w.p.Terms) == 0:
-		return pisano.Step{}, false
-	default:
-		term = w.p.Terms[w.i]
-		w.i++
-		if w.i >= len(w.p.Terms) {
-			w.i, w.pass = 0, w.pass+1
-		}
-	}
-
-	from := w.t.Pos
-	if !w.t.Step(term) {
-		return pisano.Step{}, false
-	}
-	w.n++
-	return pisano.Step{
-		From: from, To: w.t.Pos, Term: term,
-		Pass: pass, Dir: w.t.Dir, Index: w.n - 1,
-	}, true
-}
-
 // Model is the viewer state.
 type Model struct {
 	w, h int
@@ -181,7 +125,7 @@ type Model struct {
 	// into a point count.
 	movesPerPass int
 
-	walk    *walker
+	walk    *pisano.Walker
 	pts     []pisano.Pt
 	ptTint  []int // the color index of the step that reached each point
 	tinter  *pisano.Tinter
@@ -425,7 +369,7 @@ func countMoves(terms []int) int {
 
 // restart rewinds the walk without recomputing the arithmetic.
 func (m *Model) restart() {
-	m.walk = newWalker(m.period)
+	m.walk = pisano.NewWalker(m.period)
 	m.pts = append(m.pts[:0], pisano.Pt{})
 	m.ptTint = append(m.ptTint[:0], 0)
 	m.newTinter()
@@ -486,7 +430,7 @@ func (m *Model) advance(n int) {
 	}
 
 	for i := 0; i < n; i++ {
-		step, moved := m.walk.next()
+		step, moved := m.walk.Next()
 		if !moved {
 			continue
 		}
