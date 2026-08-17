@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime/debug"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -59,7 +60,20 @@ func Execute() {
 // returns an exit status. It is what a host that is not an operating system
 // calls: a shell applet has arguments and a pair of pipes, not os.Args and a
 // process to exit.
-func Run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+func Run(ctx context.Context, args []string, stdout, stderr io.Writer) (code int) {
+	// A host that is not an operating system has no process to lose, and losing
+	// one command should not cost it the shell that ran it. Unrecovered, a panic
+	// in here takes down the goroutine the shell is waiting on: no message, no
+	// exit status, a terminal that never prints another prompt. That is what
+	// `pisano --help` did in the browser build for a while, and the reason it
+	// was hard to see was that nothing said anything.
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Fprintf(stderr, "pisano: %v\n%s", r, debug.Stack())
+			code = 2
+		}
+	}()
+
 	prepare(RootCmd, ctx)
 	RootCmd.SetArgs(args)
 	RootCmd.SetOut(stdout)
