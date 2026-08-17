@@ -159,6 +159,45 @@ func (s Shape3) String() string {
 	}
 }
 
+// Axis is where the motion happens, as against what it is.
+//
+// A screw is a rotation about a LINE together with a translation along it, and
+// Axial says only how far it advances — not where the line is. That is the
+// difference between a figure that turns on the spot and one that swings around
+// something off to the side, and without it a viewer that cancels the advance
+// still has the figure orbiting the axis it failed to find.
+//
+// The point returned is on the line, as a fraction: the axis passes through
+// (num.X/den, num.Y/den, num.Z/den). It is exact, and it is a fraction because
+// the axis of a lattice motion generally misses the lattice — a rotation by a
+// quarter turn about a line halfway between two rows of points is not a rotation
+// about any point.
+//
+// Finding it needs no matrix inverted. Take the motion apart into the advance
+// along the axis, which is Axial/Periods per pass, and what is left, which is a
+// pure rotation of finite order. The orbit of any point under a pure rotation is
+// the vertices of a regular polygon centered on the axis — so the average of one
+// orbit is a point on it, and averaging is arithmetic.
+func (s Shape3) Axis() (num Pt3, den int) {
+	k := s.Periods
+	if k < 1 {
+		return Pt3{}, 1
+	}
+	// Scaled by k so nothing has to be a fraction yet: k·(what is left of the
+	// translation once the advance along the axis is taken out).
+	rest := Pt3{
+		X: k*s.Drift.X - s.Axial.X,
+		Y: k*s.Drift.Y - s.Axial.Y,
+		Z: k*s.Drift.Z - s.Axial.Z,
+	}
+	var sum, p Pt3
+	for i := 0; i < k; i++ {
+		sum = sum.Add(p)
+		p = s.Turn.Apply(p).Add(rest)
+	}
+	return sum, k * k
+}
+
 // Passes is how many times to walk the period for a given render: whatever it
 // takes for a closed path, or the caller's repeat count for one that never
 // closes. It mirrors Shape.Passes.
