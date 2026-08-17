@@ -128,9 +128,13 @@ func (t TintMode) String() string {
 // segKey identifies a unit step between two lattice points, without regard to
 // which way it was walked: the two directions are the same piece of path, which
 // is the whole point.
+//
+// It names the lower of the two endpoints and the axis the step runs along, so
+// it covers a walk in the plane and one in space equally — a plane walk is one
+// with z always zero and the axis never 2.
 type segKey struct {
-	x, y     int
-	vertical bool
+	x, y, z int
+	axis    uint8 // 0 = x, 1 = y, 2 = z
 }
 
 type segState struct {
@@ -163,15 +167,42 @@ func NewTinter(mode TintMode, n, span int) *Tinter {
 	return t
 }
 
+// tintStep is everything a tint mode can ask about one move, whether the walk was
+// in the plane or in space. Gathering it in one place is what lets the seven
+// modes mean the same thing in both.
+type tintStep struct {
+	key     segKey
+	dir     int  // which way along key it was walked
+	unit    bool // whether it was a unit step at all, so key means anything
+	term    int
+	pass    int
+	heading int // the direction it moved in: 4 of them in the plane, 6 in space
+	index   int
+}
+
 // Tint is the color index for one step, already folded into the palette, or -1
 // for a step that should be left uncolored.
 func (t *Tinter) Tint(s Step) int {
+	key, dir, unit := stepKey(s.From, s.To)
+	return t.tint(tintStep{key: key, dir: dir, unit: unit,
+		term: s.Term, pass: s.Pass, heading: s.Dir, index: s.Index})
+}
+
+// Tint3 is Tint for a walk in space. Every mode carries over unchanged except
+// heading, which has six directions to name instead of four.
+func (t *Tinter) Tint3(s Step3) int {
+	key, dir, unit := stepKey3(s.From, s.To)
+	return t.tint(tintStep{key: key, dir: dir, unit: unit,
+		term: s.Term, pass: s.Pass, heading: heading3(s.Dir.H), index: s.Index})
+}
+
+func (t *Tinter) tint(s tintStep) int {
 	switch t.mode {
 	case TintPass:
-		if s.Pass < 0 {
+		if s.pass < 0 {
 			return -1 // run-in: not part of any pass, so not part of the figure
 		}
-		return TintIndex(s.Pass, t.n)
+		return TintIndex(s.pass, t.n)
 
 	case TintStep:
 		idx, color := t.record(s)
@@ -184,22 +215,40 @@ func (t *Tinter) Tint(s Step) int {
 		return TintIndex(t.visits(s)-1, t.n)
 
 	case TintHeading:
-		return TintIndex(s.Dir, t.n)
+		return TintIndex(s.heading, t.n)
 
 	case TintTurn:
 		// Odd turns left, even turns right; a zero term never produced a step.
-		if s.Term%2 != 0 {
+		if s.term%2 != 0 {
 			return TintIndex(0, t.n)
 		}
 		return TintIndex(t.n/2, t.n)
 
 	case TintTerm:
-		return TintIndex(s.Term, t.n)
+		return TintIndex(s.term, t.n)
 
 	case TintAge:
-		return TintIndex(s.Index*t.n/t.span, t.n)
+		return TintIndex(s.index*t.n/t.span, t.n)
 	}
 	return 0
+}
+
+// heading3 numbers the six directions a turtle in space can face, so that
+// opposite directions are not the same color: +x, -x, +y, -y, +z, -z.
+func heading3(h Pt3) int {
+	switch {
+	case h.X > 0:
+		return 0
+	case h.X < 0:
+		return 1
+	case h.Y > 0:
+		return 2
+	case h.Y < 0:
+		return 3
+	case h.Z > 0:
+		return 4
+	}
+	return 5
 }
 
 // record is TintStep's counter: forward a color for a step walked again the
@@ -207,35 +256,33 @@ func (t *Tinter) Tint(s Step) int {
 // reports whether the step should be colored at all, which is separate from
 // the counter being negative — a counter runs backwards perfectly happily, and
 // only the run-in goes uncolored.
-func (t *Tinter) record(s Step) (int, bool) {
-	key, dir, ok := stepKey(s.From, s.To)
-	if !ok {
-		return s.Pass, s.Pass >= 0 // not a unit step; nothing to remember
+func (t *Tinter) record(s tintStep) (int, bool) {
+	if !s.unit {
+		return s.pass, s.pass >= 0 // not a unit step; nothing to remember
 	}
-	if st, seen := t.seen[key]; seen {
+	if st, seen := t.seen[s.key]; seen {
 		idx := st.idx + 1
-		if dir != st.dir {
+		if s.dir != st.dir {
 			idx = st.idx - 1
 		}
-		t.seen[key] = segState{dir: dir, idx: idx, visits: st.visits + 1}
+		t.seen[s.key] = segState{dir: s.dir, idx: idx, visits: st.visits + 1}
 		return idx, true
 	}
 	// The first walk of a step takes the color of the pass that walked it, so
 	// a figure with nothing retraced comes out tinted by pass.
-	t.seen[key] = segState{dir: dir, idx: max(s.Pass, 0), visits: 1}
-	return s.Pass, s.Pass >= 0
+	t.seen[s.key] = segState{dir: s.dir, idx: max(s.pass, 0), visits: 1}
+	return s.pass, s.pass >= 0
 }
 
 // visits counts how many times a step has been walked, this one included.
-func (t *Tinter) visits(s Step) int {
-	key, dir, ok := stepKey(s.From, s.To)
-	if !ok {
+func (t *Tinter) visits(s tintStep) int {
+	if !s.unit {
 		return 1
 	}
-	st := t.seen[key]
+	st := t.seen[s.key]
 	st.visits++
-	st.dir = dir
-	t.seen[key] = st
+	st.dir = s.dir
+	t.seen[s.key] = st
 	return st.visits
 }
 
@@ -248,11 +295,19 @@ func (t *Tinter) Len() int { return len(t.seen) }
 // which way it was walked. Both endpoints name the same key, so walking it back
 // is recognized as walking the same step.
 func stepKey(a, b Pt) (segKey, int, bool) {
+	return stepKey3(Pt3{a.X, a.Y, 0}, Pt3{b.X, b.Y, 0})
+}
+
+// stepKey3 is stepKey in space. The plane is the case where nothing ever moves
+// along z, so the one function serves both.
+func stepKey3(a, b Pt3) (segKey, int, bool) {
 	switch {
-	case a.Y == b.Y && abs(a.X-b.X) == 1:
-		return segKey{x: min(a.X, b.X), y: a.Y, vertical: false}, sign(b.X - a.X), true
-	case a.X == b.X && abs(a.Y-b.Y) == 1:
-		return segKey{x: a.X, y: min(a.Y, b.Y), vertical: true}, sign(b.Y - a.Y), true
+	case a.Y == b.Y && a.Z == b.Z && abs(a.X-b.X) == 1:
+		return segKey{x: min(a.X, b.X), y: a.Y, z: a.Z, axis: 0}, sign(b.X - a.X), true
+	case a.X == b.X && a.Z == b.Z && abs(a.Y-b.Y) == 1:
+		return segKey{x: a.X, y: min(a.Y, b.Y), z: a.Z, axis: 1}, sign(b.Y - a.Y), true
+	case a.X == b.X && a.Y == b.Y && abs(a.Z-b.Z) == 1:
+		return segKey{x: a.X, y: a.Y, z: min(a.Z, b.Z), axis: 2}, sign(b.Z - a.Z), true
 	}
 	return segKey{}, 0, false
 }
