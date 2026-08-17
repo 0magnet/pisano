@@ -7,17 +7,17 @@ replace github.com/0magnet/pisano => ../
 require (
 	charm.land/bubbletea/v2 v2.0.8
 	github.com/0magnet/afero v1.15.1-0.20260816202415-9f9d46a34dcd
-	github.com/0magnet/desk v0.0.0-20260817003348-846dba3350f9
+	github.com/0magnet/desk v0.0.0-20260817124935-bd1b13ca30e8
 	github.com/0magnet/pisano v0.0.0-00010101000000-000000000000
 	github.com/0magnet/sh/v3 v3.13.2-0.20260814172914-eff537668adf
-	github.com/0magnet/websh v0.0.0-20260817003315-fc87c7b6b23d
+	github.com/0magnet/websh v0.0.0-20260817124554-692488b64f0f
 	github.com/charmbracelet/colorprofile v0.4.3
 )
 
 require (
 	github.com/0magnet/u-root v0.16.1-0.20260814161052-156e0b67262b // indirect
 	github.com/0magnet/winbox-go v0.0.0-20260817001000-977b90918c97 // indirect
-	github.com/0magnet/xterm-go v0.0.0-20260816235309-30ed2888ee63 // indirect
+	github.com/0magnet/xterm-go v0.0.0-20260817124232-e65805e044b1 // indirect
 	github.com/benhoyt/goawk v1.31.0 // indirect
 	github.com/charmbracelet/ultraviolet v0.0.0-20260703014108-f5a850f9c2b7 // indirect
 	github.com/charmbracelet/x/ansi v0.11.7 // indirect

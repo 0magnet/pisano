@@ -1,11 +1,11 @@
 #!/bin/sh
-# Build the browser version into ../docs/desk, which is what GitHub Pages serves.
+# Build the browser version into ../docs, which is what GitHub Pages serves.
 #
-# Both toolchains are carried: TinyGo at docs/desk/ because it is a quarter the
-# size and is fetched before anything appears, and the standard Go build at
-# docs/desk/go/ because TinyGo occasionally miscompiles something and having the
-# other one a click away is how you find out that is what happened. The two
-# pages link to each other.
+# Both toolchains are carried: TinyGo at the root because it is a quarter the
+# size and is fetched before anything appears, and the standard Go build at go/
+# because TinyGo occasionally miscompiles something and having the other one a
+# click away is how you find out that is what happened. The two pages link to
+# each other.
 #
 #   ./build.sh          both
 #   ./build.sh tinygo   TinyGo only
@@ -13,7 +13,7 @@
 set -eu
 
 cd "$(dirname "$0")"
-out=../docs/desk
+out=../docs
 
 build_tinygo() {
 	mkdir -p "$out"

@@ -29,11 +29,10 @@ import (
 	"github.com/0magnet/pisano/web/app"
 )
 
-const greeting = "" +
-	"\x1b[1;35mpisano\x1b[0m on a desktop — designs in one window, drawn in another\r\n" +
-	"\x1b[2mwindows are \x1b[0m\x1b[1mwinbox-go\x1b[0m\x1b[2m, the shell is \x1b[0m\x1b[1mwebsh\x1b[0m\x1b[2m, the designs are the same Go package the CLI uses\x1b[0m\r\n\r\n" +
-	"try: \x1b[1mpisano circle --mod 1-40 -o sheet.svg && view sheet.svg\x1b[0m\r\n" +
-	"     \x1b[1mpisano tui\x1b[0m  ·  \x1b[1mpisano turtle --mod 25\x1b[0m  ·  \x1b[1mopen files\x1b[0m\r\n\r\n"
+// The terminal opens at a prompt and nothing else. What the page is and what
+// to try are on the header above it, where they can be read without being
+// scrolled away by the first command.
+const greeting = ""
 
 func main() {
 	if el := js.Global().Get("document").Call("getElementById", "desktop"); el.Truthy() {

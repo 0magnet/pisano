@@ -316,69 +316,82 @@ $ go run . sweep --max 60 --dupes
 ## In the browser
 
 The same designs, driven from a shell, compiled to WebAssembly:
-**[0magnet.github.io/pisano/term/](https://0magnet.github.io/pisano/term/)**
-(TinyGo; the [standard Go build](https://0magnet.github.io/pisano/term/go/) is
-linked from the page header)
+**[0magnet.github.io/pisano](https://0magnet.github.io/pisano/)** — a desktop,
+with the shell in one window and whatever it draws in another. TinyGo by
+default; the [standard Go build](https://0magnet.github.io/pisano/go/) is linked
+from the page header, as is the [gallery](https://0magnet.github.io/pisano/gallery/).
 
 ```
 pisano:~$ pisano tui                                 the viewer, full screen
 pisano:~$ pisano turtle --mod 25                     box drawing, in the shell
 pisano:~$ pisano sweep --max 300                     the analysis
-pisano:~$ pisano circle --mod 1-40 -o sheet.svg && download sheet.svg
+pisano:~$ pisano circle --mod 8,13,21,34 -o s.svg && view s.svg
 ```
 
-The terminal and the shell are **[websh](https://github.com/0magnet/websh)** —
-xterm-go, a real Bash interpreter, and a virtual filesystem, all already
-compiled to wasm. This repo adds one applet to it. So the pipes, globs, history
-and tab completion are the shell's, `download` is websh's, and the figures are
-this package's, unchanged.
-
-The viewer running there is the *same* `tui.Model` the desktop binary runs. What
-differs is only what feeds it:
-
-```
-                 Resize / Advance / Key / Frame
-                              |
-        +---------------------+---------------------+
-        |                                           |
-   Bubble Tea                                  websh applet
-   (native, pkg/tui/bubbletea.go)              (wasm, web/applet.go)
-   key messages, a Tick command                raw bytes, a time.Ticker
-```
-
-Four calls, one model, one set of tests covering both. `pkg/tui` has no
-dependency on Bubble Tea except in that one build-tagged file — which is what
-lets it compile for js/wasm at all, since Bubble Tea has no port there.
-
-### On a desktop
-
-**[0magnet.github.io/pisano/desk/](https://0magnet.github.io/pisano/desk/)** puts
-the same shell in a window, on [desk](https://github.com/0magnet/desk), so a
-design can be generated in one window and opened in another:
-
-```
-pisano circle --mod 8,13,21,34 --cols 4 -o sheet.svg && view sheet.svg
-```
-
-There is no message passing behind that. Both windows are panes in one binary
-over one filesystem, so writing the file *is* the hand-off and `view` only has
-to name it. The dependency points pisano → desk; desk knows nothing about
+That last line is the point of the window manager. There is no message passing
+behind it: both windows are panes in one binary over one filesystem, so writing
+the file *is* the hand-off and `view` only has to name it. The dependency points
+pisano → [desk](https://github.com/0magnet/desk); desk knows nothing about
 pisano, which is why the command lives in `web/app` and both binaries register
 it.
+
+The terminal and the shell are **[websh](https://github.com/0magnet/websh)** —
+[xterm-go](https://github.com/0magnet/xterm-go), a real Bash interpreter, and a
+virtual filesystem, all already compiled to wasm. So the pipes, globs, history
+and tab completion are the shell's, and the figures are this package's,
+unchanged.
+
+**Selecting works** the way it does in a terminal: drag, double-click for a word
+— a path counts as one, wrap and all — triple-click for a line, `Ctrl+Shift+C`
+to copy, and right-click for a menu. That needed writing, because a browser's
+own Copy acts on the document's selection and a terminal's is not one: it is a
+range of buffer cells the renderer draws, with no DOM text behind it.
+
+### One command tree, two hosts
+
+The browser runs the *same* cobra tree the binary does, and the same
+`tui.Model`. What differs is three answers the commands ask their host for —
+where files go, where "here" is, and how to get a terminal for the viewer — and
+those travel in the context, so two open terminals cannot answer with each
+other's:
+
+```go
+type Host struct {
+	Files     FileSystem            // the shell's filesystem, or the OS's
+	Dir       func() string         // the shell's cwd, or the process's
+	RunViewer func(tui.Options) error
+}
+```
+
+Bubble Tea drives the viewer in both places. Upstream has no js/wasm port, so
+there is a [fork](https://github.com/0magnet/bubbletea) whose `main` tracks
+upstream and whose `wasm` branch carries two files — a resize listener that
+waits on the context instead of on SIGWINCH, and a tty that admits there isn't
+one. In the page it is handed its reader, writer, size and color profile rather
+than asking a tty, since an `io.Pipe` cannot answer and would otherwise strip
+every escape the model writes.
+
+Two things do not survive the trip, and both are recorded where they bite:
+
+- **TinyGo cannot execute `text/template`.** A template reaches its data by
+  reflection and TinyGo panics on the first method call — `unimplemented:
+  (reflect.Type).NumOut()`. cobra renders help by executing a template, so
+  `pisano --help` took the shell's goroutine down with it. `pkg/flags` writes
+  the help out directly instead, on both hosts, which also dropped four
+  megabytes from the wasm.
+- **A command tree built once is not ready to run twice.** Flag values live in
+  the closures that registered them, and cobra copies the root's context onto a
+  subcommand only if it has none. A process that runs one command and exits
+  never notices; a browser runs a hundred in the same process. `commands.Run`
+  resets both before every run.
 
 Building it:
 
 ```
-web/build.sh          # both     -> docs/term and docs/term/go
-web/build.sh tinygo   # TinyGo only                   3.5 MB
-web/build.sh go       # standard Go only               13 MB
+web/build.sh          # both      -> docs/ and docs/go/
+web/build.sh tinygo   # TinyGo only                   4.9 MB
+web/build.sh go       # standard Go only               16 MB
 ```
-
-Both are carried and the page header links between them. TinyGo is the default
-because it is a quarter the size and is fetched before anything appears; the
-standard Go build is there because TinyGo occasionally miscompiles something,
-and having the other one a click away is how you find out that is what
-happened.
 
 `web/` is a separate module. Keeping it out of the root one means the CLI's
 dependencies stay at cobra and Bubble Tea, rather than dragging in a terminal
@@ -387,7 +400,8 @@ emulator and a shell interpreter for a build almost nobody makes.
 ## The figures
 
 Every sheet below is produced by `pisano gallery`, which also writes them as
-standalone SVG and builds [`docs/index.html`](docs/index.html) holding the lot.
+standalone SVG and builds [`docs/gallery/index.html`](docs/gallery/index.html)
+holding the lot.
 The images follow your system's light or dark setting.
 
 ### The number line, moduli 1–9
@@ -607,10 +621,16 @@ a cobra tree under `cmd/`, and the actual work in `pkg/`.
 ```
 pisano.go                     package main — wires up styling, calls Execute
 cmd/pisano/commands/          the cobra tree: root, period, circle, turtle,
-                              sweep, gallery
-pkg/flags/                    coloredcobra help templates and styling
+                              sweep, tui, gallery, and the Host the commands
+                              ask for a filesystem, a cwd and a terminal
+pkg/flags/                    the help screen, written out rather than templated
 pkg/pisano/                   the library — no CLI, no cobra, no bubbletea
 pkg/tui/                      the bubbletea viewer
+web/                          a separate module: the same tree as a websh
+                              applet, and the desk binary the page runs
+docs/                         what GitHub Pages serves: the desktop at the
+                              root, the standard Go build under go/, the
+                              gallery under gallery/
 ```
 
 `RootCmd` is exported, so the whole tree can be grafted onto another binary's
