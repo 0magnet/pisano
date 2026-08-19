@@ -34,7 +34,7 @@ particular to Fibonacci.`,
 	SilenceErrors: true,
 	SilenceUsage:  true,
 	Run: func(cmd *cobra.Command, _ []string) {
-		cmd.Help() //nolint:errcheck
+		cmd.Help() //nolint:errcheck,gosec
 	},
 }
 
@@ -69,7 +69,7 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) (code int
 	// was hard to see was that nothing said anything.
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Fprintf(stderr, "pisano: %v\n%s", r, debug.Stack())
+			fmt.Fprintf(stderr, "pisano: %v\n%s", r, debug.Stack()) //nolint:errcheck // reporting a panic; if stderr is gone there is nowhere to say so
 			code = 2
 		}
 	}()
@@ -79,7 +79,7 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) (code int
 	RootCmd.SetOut(stdout)
 	RootCmd.SetErr(stderr)
 	if err := RootCmd.ExecuteContext(ctx); err != nil {
-		fmt.Fprintln(stderr, "pisano:", err)
+		fmt.Fprintln(stderr, "pisano:", err) //nolint:errcheck // as above
 		return 1
 	}
 	return 0
@@ -115,7 +115,7 @@ func prepare(cmd *cobra.Command, ctx context.Context) {
 		// Set is the only way back: the default is kept as the string it was
 		// registered with, which is exactly what the parser would have been
 		// handed had the flag been given explicitly.
-		_ = f.Value.Set(f.DefValue)
+		_ = f.Value.Set(f.DefValue) //nolint:errcheck // restoring the registered default; it parsed once already
 		f.Changed = false
 	})
 	for _, sub := range cmd.Commands() {

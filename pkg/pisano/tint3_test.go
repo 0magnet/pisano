@@ -10,10 +10,10 @@ import "testing"
 
 // step3 builds a step in space between two adjacent points, giving it the
 // frame the turtle would have been in to make that move.
-func step3(from, to Pt3, term, pass, index int) Step3 {
+func step3(from, to Pt3, pass, index int) Step3 {
 	h := Pt3{to.X - from.X, to.Y - from.Y, to.Z - from.Z}
 	// Any frame with this heading will do — only H is read.
-	return Step3{From: from, To: to, Term: term, Pass: pass, Index: index,
+	return Step3{From: from, To: to, Term: 1, Pass: pass, Index: index,
 		Dir: Frame3{H: h, U: Pt3{0, 1, 0}, R: Pt3{0, 0, 1}}}
 }
 
@@ -50,13 +50,13 @@ func TestFlatWalksTintTheSameEitherWay(t *testing.T) {
 func TestStepModeRemembersASegmentInSpace(t *testing.T) {
 	tn := NewTinter(TintStep, 6, 10)
 	a, b := Pt3{0, 0, 0}, Pt3{0, 0, 1}
-	if got := tn.Tint3(step3(a, b, 1, 0, 0)); got != 0 {
+	if got := tn.Tint3(step3(a, b, 0, 0)); got != 0 {
 		t.Fatalf("first walk gave %d, want 0", got)
 	}
-	if got := tn.Tint3(step3(a, b, 1, 4, 1)); got != 1 {
+	if got := tn.Tint3(step3(a, b, 4, 1)); got != 1 {
 		t.Errorf("walking it again gave %d, want 1", got)
 	}
-	if got := tn.Tint3(step3(b, a, 1, 4, 2)); got != 0 {
+	if got := tn.Tint3(step3(b, a, 4, 2)); got != 0 {
 		t.Errorf("walking it back gave %d, want 0", got)
 	}
 }
@@ -68,11 +68,11 @@ func TestSegmentsAlongDifferentAxesAreDifferentPath(t *testing.T) {
 	tn := NewTinter(TintVisits, 6, 10)
 	o := Pt3{4, 4, 4}
 	for i, to := range []Pt3{{5, 4, 4}, {4, 5, 4}, {4, 4, 5}} {
-		if got := tn.Tint3(step3(o, to, 1, 0, i)); got != 0 {
+		if got := tn.Tint3(step3(o, to, 0, i)); got != 0 {
 			t.Errorf("step along axis %d gave %d visits-1, want 0 — it was counted as one already walked", i, got)
 		}
 	}
-	if got := tn.Tint3(step3(o, Pt3{5, 4, 4}, 1, 0, 3)); got != 1 {
+	if got := tn.Tint3(step3(o, Pt3{5, 4, 4}, 0, 3)); got != 1 {
 		t.Errorf("second walk of the x step gave %d, want 1", got)
 	}
 }
@@ -85,7 +85,7 @@ func TestHeadingNamesSixDirections(t *testing.T) {
 	seen := map[int]Pt3{}
 	o := Pt3{0, 0, 0}
 	for _, to := range []Pt3{{1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}} {
-		got := tn.Tint3(step3(o, to, 1, 0, 0))
+		got := tn.Tint3(step3(o, to, 0, 0))
 		if prev, dup := seen[got]; dup {
 			t.Errorf("heading %v and %v both tinted %d", prev, to, got)
 		}

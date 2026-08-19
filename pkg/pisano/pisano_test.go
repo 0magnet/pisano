@@ -83,7 +83,7 @@ func TestLucasAndTriangularArePeriodic(t *testing.T) {
 
 // Scaling the sequence by k reproduces the plain designs at every kth modulus:
 // k·Fib mod k·m is k times Fib mod m, so the residues are the same figures
-// scaled up. This is the relation behind the video's "design m/k" labelling.
+// scaled up. This is the relation behind the video's "design m/k" labeling.
 func TestScaledReproducesPlainAtEveryKth(t *testing.T) {
 	for k := 2; k <= 4; k++ {
 		for m := 1; m <= 40; m++ {

@@ -79,7 +79,7 @@ func (h *Host) withDefaults() *Host {
 
 type osFiles struct{}
 
-func (osFiles) Create(name string) (io.WriteCloser, error) { return os.Create(name) }
+func (osFiles) Create(name string) (io.WriteCloser, error) { return os.Create(name) } //nolint:gosec // the path is the output file the caller named
 
 func (osFiles) MkdirAll(path string, perm os.FileMode) error { return os.MkdirAll(path, perm) }
 

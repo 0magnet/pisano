@@ -124,7 +124,7 @@ func (b *Braille) String(colorize bool) string {
 			if b.dots[i] == 0 {
 				sb.WriteByte(' ')
 			} else {
-				sb.WriteRune(rune(0x2800 + int(b.dots[i])))
+				sb.WriteRune(0x2800 + rune(b.dots[i]))
 			}
 		}
 		if colorize && cur != "" {

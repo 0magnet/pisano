@@ -120,7 +120,7 @@ func create(h *Host, out io.Writer, path string) (io.Writer, func(), error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	return f, func() { f.Close() }, nil
+	return f, func() { _ = f.Close() }, nil //nolint:errcheck,gosec // the callers cleanup; the file was only written to
 }
 
 func isHTML(path string) bool { return strings.EqualFold(filepath.Ext(path), ".html") }

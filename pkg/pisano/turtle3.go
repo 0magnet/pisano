@@ -253,7 +253,7 @@ func pass3(terms []int) (Frame3, Pt3) {
 }
 
 // Step3 is one move of a walk in space, carrying everything a renderer might
-// key a colour on. It mirrors Step.
+// key a color on. It mirrors Step.
 type Step3 struct {
 	From, To Pt3
 	Term     int    // the term that produced it

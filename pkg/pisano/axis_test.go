@@ -10,9 +10,6 @@ import "testing"
 // integer arithmetic — an axis that came out a rounding error away from right
 // would be a slow wobble on screen, which is the thing it exists to remove.
 
-// passMotion is what one pass of the period does to a point: turn, then shift.
-func passMotion(s Shape3, p Pt3) Pt3 { return s.Turn.Apply(p).Add(s.Drift) }
-
 func TestAxisIsCarriedAlongItself(t *testing.T) {
 	for _, m := range []int{2, 3, 5, 8, 11, 16, 25, 47, 100, 233, 254} {
 		p := Compute(Fibonacci(), m, 0)

@@ -149,7 +149,7 @@ func (it *linearIter) Next() int {
 }
 
 func (it *linearIter) State() (uint64, bool) {
-	return uint64(it.x)*uint64(it.m) + uint64(it.y), true
+	return uint64(it.x)*uint64(it.m) + uint64(it.y), true //nolint:gosec // a residue mod m, non-negative by construction
 }
 
 // Fibonacci is 0, 1, 1, 2, 3, 5, 8, ...
@@ -162,7 +162,7 @@ func Lucas() Sequence { return linearSeq{"lucas", 2, 1} }
 
 // Scaled is the Fibonacci sequence multiplied through by k. Its designs
 // reproduce the plain Fibonacci ones at every kth modulus and interleave new
-// ones between them, which is the "design m/k" labelling: m is the modulus and
+// ones between them, which is the "design m/k" labeling: m is the modulus and
 // k the multiplier. k is not a modulus and this is not "mod m/k" — a modulus
 // is always an integer.
 func Scaled(k int) Sequence {
@@ -190,7 +190,7 @@ func (it *natIter) Next() int {
 	return v
 }
 
-func (it *natIter) State() (uint64, bool) { return uint64(it.n), true }
+func (it *natIter) State() (uint64, bool) { return uint64(it.n), true } //nolint:gosec // a residue mod m, non-negative by construction
 
 // Naturals is 0, 1, 2, 3, 4, ...
 func Naturals() Sequence { return natSeq{} }
@@ -217,7 +217,7 @@ func (it *triIter) Next() int {
 }
 
 func (it *triIter) State() (uint64, bool) {
-	return uint64(it.n)*uint64(it.m) + uint64(it.t), true
+	return uint64(it.n)*uint64(it.m) + uint64(it.t), true //nolint:gosec // a residue mod m, non-negative by construction
 }
 
 // Triangular is 0, 1, 3, 6, 10, 15, ...

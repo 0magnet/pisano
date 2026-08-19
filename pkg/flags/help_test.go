@@ -18,7 +18,7 @@ func tree(t *testing.T) *cobra.Command {
 		Long:          "prog — does things\n\nAt some length.",
 		SilenceErrors: true,
 		SilenceUsage:  true,
-		Run:           func(c *cobra.Command, _ []string) { c.Help() }, //nolint:errcheck
+		Run:           func(c *cobra.Command, _ []string) { _ = c.Help() }, //nolint:errcheck,gosec
 	}
 	root.PersistentFlags().Bool("verbose", false, "say more")
 
@@ -169,7 +169,7 @@ func TestHelpUsesNoTemplate(t *testing.T) {
 		c.SetOut(&out)
 		// A template would render this marker; the renderer writes text.
 		c.Long = "{{.Nonexistent}}"
-		c.Help() //nolint:errcheck
+		_ = c.Help() //nolint:errcheck,gosec
 		if !strings.Contains(out.String(), "{{.Nonexistent}}") {
 			t.Errorf("%s: help went through a template:\n%s", c.Name(), out.String())
 		}

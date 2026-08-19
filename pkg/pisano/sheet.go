@@ -117,6 +117,10 @@ func (s Sheet) captionSize(caption string) float64 {
 func (s Sheet) WriteSVG(w io.Writer, tiles []Tile) error {
 	if len(tiles) == 0 {
 		return fmt.Errorf("sheet: nothing to render")
+		// bufio.Writer latches its first error and turns every later write into a
+		// no-op, so the Flush at the end is what reports a failure. That is why the
+		// writes below are individually nolint:errcheck rather than each checked:
+		// checking them would report the same error over and over.
 	}
 	bw := bufio.NewWriter(w)
 
@@ -126,24 +130,24 @@ func (s Sheet) WriteSVG(w io.Writer, tiles []Tile) error {
 	width, height := float64(cols)*cell, float64(rows)*cell
 	inner := s.TileSize()
 
-	fmt.Fprintf(bw, `<svg xmlns="http://www.w3.org/2000/svg" width="%.0f" height="%.0f" viewBox="0 0 %.0f %.0f">`+"\n",
+	fmt.Fprintf(bw, `<svg xmlns="http://www.w3.org/2000/svg" width="%.0f" height="%.0f" viewBox="0 0 %.0f %.0f">`+"\n", //nolint:errcheck
 		width, height, width, height)
-	fmt.Fprint(bw, styleBlock(s.Theme))
-	fmt.Fprintf(bw, `<rect class="bg" width="%.0f" height="%.0f"/>`+"\n", width, height)
+	fmt.Fprint(bw, styleBlock(s.Theme))                                                  //nolint:errcheck
+	fmt.Fprintf(bw, `<rect class="bg" width="%.0f" height="%.0f"/>`+"\n", width, height) //nolint:errcheck
 
 	for i, t := range tiles {
 		ox := float64(i%cols) * cell
 		oy := float64(i/cols) * cell
-		fmt.Fprintf(bw, `<g transform="translate(%.2f,%.2f)">`+"\n", ox+(cell-inner)/2, oy+s.pad())
-		fmt.Fprint(bw, t.Body)
-		fmt.Fprint(bw, "</g>\n")
+		fmt.Fprintf(bw, `<g transform="translate(%.2f,%.2f)">`+"\n", ox+(cell-inner)/2, oy+s.pad()) //nolint:errcheck
+		fmt.Fprint(bw, t.Body)                                                                      //nolint:errcheck
+		fmt.Fprint(bw, "</g>\n")                                                                    //nolint:errcheck
 		if s.Labels && t.Caption != "" {
-			fmt.Fprintf(bw, `<text class="cap" x="%.2f" y="%.2f" font-size="%.1f">%s</text>`+"\n",
+			fmt.Fprintf(bw, `<text class="cap" x="%.2f" y="%.2f" font-size="%.1f">%s</text>`+"\n", //nolint:errcheck
 				ox+cell/2, oy+cell-s.pad()*0.5, s.captionSize(t.Caption), svgEscape(t.Caption))
 		}
 	}
 
-	fmt.Fprint(bw, "</svg>\n")
+	fmt.Fprint(bw, "</svg>\n") //nolint:errcheck
 	return bw.Flush()
 }
 
@@ -169,13 +173,13 @@ func WriteHTML(w io.Writer, title string, secs []Section) error {
 func WriteHTMLPage(w io.Writer, title, lead string, secs []Section) error {
 	bw := bufio.NewWriter(w)
 
-	fmt.Fprintf(bw, "<!doctype html>\n<html lang=\"en\">\n<meta charset=\"utf-8\">\n"+
+	fmt.Fprintf(bw, "<!doctype html>\n<html lang=\"en\">\n<meta charset=\"utf-8\">\n"+ //nolint:errcheck
 		"<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"+
 		"<title>%s</title>\n", svgEscape(title))
-	fmt.Fprint(bw, htmlStyle())
-	fmt.Fprintf(bw, "<h1>%s</h1>\n", svgEscape(title))
+	fmt.Fprint(bw, htmlStyle())                        //nolint:errcheck
+	fmt.Fprintf(bw, "<h1>%s</h1>\n", svgEscape(title)) //nolint:errcheck
 	if lead != "" {
-		fmt.Fprintf(bw, "<p class=\"lead\">%s</p>\n", lead)
+		fmt.Fprintf(bw, "<p class=\"lead\">%s</p>\n", lead) //nolint:errcheck
 	}
 
 	for _, sec := range secs {
@@ -187,27 +191,27 @@ func WriteHTMLPage(w io.Writer, title, lead string, secs []Section) error {
 			min = 180
 		}
 		if sec.Title != "" {
-			fmt.Fprintf(bw, "<h2>%s</h2>\n", svgEscape(sec.Title))
+			fmt.Fprintf(bw, "<h2>%s</h2>\n", svgEscape(sec.Title)) //nolint:errcheck
 		}
 		if sec.Note != "" {
-			fmt.Fprintf(bw, "<p class=\"note\">%s</p>\n", svgEscape(sec.Note))
+			fmt.Fprintf(bw, "<p class=\"note\">%s</p>\n", svgEscape(sec.Note)) //nolint:errcheck
 		}
-		fmt.Fprintf(bw, `<div class="grid" style="--min:%dpx">`+"\n", min)
+		fmt.Fprintf(bw, `<div class="grid" style="--min:%dpx">`+"\n", min) //nolint:errcheck
 		for _, t := range sec.Tiles {
-			fmt.Fprint(bw, `<figure>`)
-			fmt.Fprintf(bw, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %.2f %.2f">`,
+			fmt.Fprint(bw, `<figure>`)                                                          //nolint:errcheck
+			fmt.Fprintf(bw, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %.2f %.2f">`, //nolint:errcheck
 				t.Size, t.Size)
-			fmt.Fprint(bw, t.Body)
-			fmt.Fprint(bw, `</svg>`)
+			fmt.Fprint(bw, t.Body)   //nolint:errcheck
+			fmt.Fprint(bw, `</svg>`) //nolint:errcheck
 			if t.Caption != "" {
-				fmt.Fprintf(bw, `<figcaption>%s</figcaption>`, svgEscape(t.Caption))
+				fmt.Fprintf(bw, `<figcaption>%s</figcaption>`, svgEscape(t.Caption)) //nolint:errcheck
 			}
-			fmt.Fprint(bw, "</figure>\n")
+			fmt.Fprint(bw, "</figure>\n") //nolint:errcheck
 		}
-		fmt.Fprint(bw, "</div>\n")
+		fmt.Fprint(bw, "</div>\n") //nolint:errcheck
 	}
 
-	fmt.Fprint(bw, "</html>\n")
+	fmt.Fprint(bw, "</html>\n") //nolint:errcheck
 	return bw.Flush()
 }
 

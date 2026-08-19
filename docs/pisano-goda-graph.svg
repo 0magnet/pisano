@@ -22,10 +22,10 @@
 <!-- github.com/0magnet/pisano/cmd/pisano/commands -->
 <g id="node3" class="node">
 <title>github.com/0magnet/pisano/cmd/pisano/commands</title>
-<g id="a_node3"><a xlink:href="https://pkg.go.dev/github.com/0magnet/pisano/cmd/pisano/commands" xlink:title="github.com/0magnet/pisano/cmd/pisano/commands\l1054 / 35.8KB\l" target="_graphviz">
+<g id="a_node3"><a xlink:href="https://pkg.go.dev/github.com/0magnet/pisano/cmd/pisano/commands" xlink:title="github.com/0magnet/pisano/cmd/pisano/commands\l1054 / 36.8KB\l" target="_graphviz">
 <polygon fill="none" stroke="#07917e" stroke-width="2" stroke-opacity="0.698039" points="576,-113 288,-113 288,-77 576,-77 576,-113"/>
 <text xml:space="preserve" text-anchor="start" x="296" y="-98.25" font-family="Times,serif" font-size="10.00">github.com/0magnet/pisano/cmd/pisano/commands</text>
-<text xml:space="preserve" text-anchor="start" x="296" y="-85.5" font-family="Times,serif" font-size="10.00">1054 / 35.8KB</text>
+<text xml:space="preserve" text-anchor="start" x="296" y="-85.5" font-family="Times,serif" font-size="10.00">1054 / 36.8KB</text>
 </a>
 </g>
 </g>
@@ -38,10 +38,10 @@
 <!-- github.com/0magnet/pisano/pkg/flags -->
 <g id="node4" class="node">
 <title>github.com/0magnet/pisano/pkg/flags</title>
-<g id="a_node4"><a xlink:href="https://pkg.go.dev/github.com/0magnet/pisano/pkg/flags" xlink:title="github.com/0magnet/pisano/pkg/flags\l206 / 7.0KB\l" target="_graphviz">
+<g id="a_node4"><a xlink:href="https://pkg.go.dev/github.com/0magnet/pisano/pkg/flags" xlink:title="github.com/0magnet/pisano/pkg/flags\l209 / 7.4KB\l" target="_graphviz">
 <polygon fill="none" stroke="#160791" stroke-width="2" stroke-opacity="0.698039" points="540,-59 324,-59 324,-23 540,-23 540,-59"/>
 <text xml:space="preserve" text-anchor="start" x="332" y="-44.25" font-family="Times,serif" font-size="10.00">github.com/0magnet/pisano/pkg/flags</text>
-<text xml:space="preserve" text-anchor="start" x="332" y="-31.5" font-family="Times,serif" font-size="10.00">206 / 7.0KB</text>
+<text xml:space="preserve" text-anchor="start" x="332" y="-31.5" font-family="Times,serif" font-size="10.00">209 / 7.4KB</text>
 </a>
 </g>
 </g>
@@ -64,10 +64,10 @@
 <!-- github.com/0magnet/pisano/pkg/pisano -->
 <g id="node5" class="node">
 <title>github.com/0magnet/pisano/pkg/pisano</title>
-<g id="a_node5"><a xlink:href="https://pkg.go.dev/github.com/0magnet/pisano/pkg/pisano" xlink:title="github.com/0magnet/pisano/pkg/pisano\l2695 / 86.8KB\l" target="_graphviz">
+<g id="a_node5"><a xlink:href="https://pkg.go.dev/github.com/0magnet/pisano/pkg/pisano" xlink:title="github.com/0magnet/pisano/pkg/pisano\l2699 / 88.0KB\l" target="_graphviz">
 <polygon fill="none" stroke="#7d0791" stroke-width="2" stroke-opacity="0.698039" points="1296,-90 1044,-90 1044,-54 1296,-54 1296,-90"/>
 <text xml:space="preserve" text-anchor="start" x="1052" y="-75.25" font-family="Times,serif" font-size="10.00">github.com/0magnet/pisano/pkg/pisano</text>
-<text xml:space="preserve" text-anchor="start" x="1052" y="-62.5" font-family="Times,serif" font-size="10.00">2695 / 86.8KB</text>
+<text xml:space="preserve" text-anchor="start" x="1052" y="-62.5" font-family="Times,serif" font-size="10.00">2699 / 88.0KB</text>
 </a>
 </g>
 </g>

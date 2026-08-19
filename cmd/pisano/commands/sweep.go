@@ -47,21 +47,21 @@ groups the moduli that trace the same figure as each other.`,
 		}
 		rows := pisano.Sweep(s, pisano.SweepOptions{Max: max, Dupes: dupes, Passes: passes})
 		if table {
-			fmt.Fprint(stdout, pisano.Table(rows))
-			fmt.Fprintln(stdout)
+			fmt.Fprint(stdout, pisano.Table(rows)) //nolint:errcheck
+			fmt.Fprintln(stdout)                   //nolint:errcheck
 		}
-		fmt.Fprintln(stdout, "zeros vs symmetry of the circular design")
-		fmt.Fprintln(stdout, "----------------------------------------")
-		fmt.Fprint(stdout, pisano.ZeroSymmetry(rows))
-		fmt.Fprintln(stdout)
-		fmt.Fprintln(stdout, "turtle path shape")
-		fmt.Fprintln(stdout, "-----------------")
-		fmt.Fprint(stdout, pisano.TurtleShapes(rows))
+		fmt.Fprintln(stdout, "zeros vs symmetry of the circular design") //nolint:errcheck
+		fmt.Fprintln(stdout, "----------------------------------------") //nolint:errcheck
+		fmt.Fprint(stdout, pisano.ZeroSymmetry(rows))                    //nolint:errcheck
+		fmt.Fprintln(stdout)                                             //nolint:errcheck
+		fmt.Fprintln(stdout, "turtle path shape")                        //nolint:errcheck
+		fmt.Fprintln(stdout, "-----------------")                        //nolint:errcheck
+		fmt.Fprint(stdout, pisano.TurtleShapes(rows))                    //nolint:errcheck
 		if dupes {
-			fmt.Fprintln(stdout)
-			fmt.Fprintln(stdout, "turtle paths shared between moduli")
-			fmt.Fprintln(stdout, "----------------------------------")
-			fmt.Fprint(stdout, pisano.Duplicates(rows))
+			fmt.Fprintln(stdout)                                       //nolint:errcheck
+			fmt.Fprintln(stdout, "turtle paths shared between moduli") //nolint:errcheck
+			fmt.Fprintln(stdout, "----------------------------------") //nolint:errcheck
+			fmt.Fprint(stdout, pisano.Duplicates(rows))                //nolint:errcheck
 		}
 		return nil
 	}

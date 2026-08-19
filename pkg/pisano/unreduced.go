@@ -105,7 +105,7 @@ func (it *linearMoves) Next() int {
 
 func (it *linearMoves) State() (uint64, bool) {
 	var k uint64
-	k = uint64(it.px)<<3 | uint64(it.py)<<2
+	k = uint64(it.px)<<3 | uint64(it.py)<<2 //nolint:gosec // a residue mod m, non-negative by construction
 	if it.vx == 0 {
 		k |= 2
 	}
@@ -178,7 +178,7 @@ func (it *triMoves) Next() int {
 }
 
 func (it *triMoves) State() (uint64, bool) {
-	k := uint64(it.r) << 1
+	k := uint64(it.r) << 1 //nolint:gosec // a residue mod m, non-negative by construction
 	if it.first {
 		k |= 1
 	}

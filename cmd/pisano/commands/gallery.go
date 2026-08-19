@@ -171,7 +171,7 @@ func buildGallery(h *Host, stdout, stderr io.Writer, out, svgDir string, cell in
 			fmt.Sprintf("Fibonacci × %d, moduli 1–24", k),
 			fmt.Sprintf("Multiplying the sequence through by %d makes the plain "+
 				"designs reappear at every %dth modulus, with new ones interleaved "+
-				"between them. That is the \"design m/%d\" labelling — m is still an "+
+				"between them. That is the \"design m/%d\" labeling — m is still an "+
 				"integer modulus, and there is no such thing as mod m/%d.", k, k, k, k),
 			pisano.Scaled(k), seqRange(1, 24))
 	}
@@ -251,7 +251,7 @@ func buildGallery(h *Host, stdout, stderr io.Writer, out, svgDir string, cell in
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(stderr, "wrote %s (%d sections)\n", out, len(secs))
+	fmt.Fprintf(stderr, "wrote %s (%d sections)\n", out, len(secs)) //nolint:errcheck // progress on stderr
 
 	if svgDir == "" {
 		return nil
@@ -271,6 +271,6 @@ func buildGallery(h *Host, stdout, stderr io.Writer, out, svgDir string, cell in
 			return err
 		}
 	}
-	fmt.Fprintf(stderr, "wrote %d SVG sheet(s) to %s\n", len(sheets), svgDir)
+	fmt.Fprintf(stderr, "wrote %d SVG sheet(s) to %s\n", len(sheets), svgDir) //nolint:errcheck // progress on stderr
 	return nil
 }

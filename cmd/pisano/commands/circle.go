@@ -91,7 +91,7 @@ moduli 8/21/55 and 13/34/89 are only obvious side by side.`,
 					return err
 				}
 			}
-			fmt.Fprintf(stderr, "wrote %d file(s) to %s\n", len(designs), split)
+			fmt.Fprintf(stderr, "wrote %d file(s) to %s\n", len(designs), split) //nolint:errcheck
 			return nil
 		}
 
@@ -111,7 +111,7 @@ moduli 8/21/55 and 13/34/89 are only obvious side by side.`,
 			return err
 		}
 		if out != "-" {
-			fmt.Fprintf(stderr, "wrote %d design(s) to %s\n", len(designs), out)
+			fmt.Fprintf(stderr, "wrote %d design(s) to %s\n", len(designs), out) //nolint:errcheck
 		}
 		return nil
 	}

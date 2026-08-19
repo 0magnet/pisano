@@ -43,11 +43,11 @@ limit as though it were a period.`,
 		}
 		for _, m := range ms {
 			p := pisano.Compute(s, m, limit)
-			fmt.Fprintln(stdout, p)
+			fmt.Fprintln(stdout, p) //nolint:errcheck
 			if len(p.Head) > 0 {
-				fmt.Fprintf(stdout, "  run-in: %v\n", p.Head)
+				fmt.Fprintf(stdout, "  run-in: %v\n", p.Head) //nolint:errcheck
 			}
-			fmt.Fprintf(stdout, "  terms:  %v\n", p.Terms)
+			fmt.Fprintf(stdout, "  terms:  %v\n", p.Terms) //nolint:errcheck
 		}
 		return nil
 	}

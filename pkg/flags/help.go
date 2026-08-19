@@ -51,12 +51,15 @@ func paint(style, s string) string {
 }
 
 // writeHelp is what --help prints: what the command is for, then how to use it.
+// The nolint:errcheck on the writes below is deliberate and repeated: this
+// renders help to the command's own output, and there is no second channel
+// on which to report that writing to it failed.
 func writeHelp(w io.Writer, cmd *cobra.Command, usage bool) {
 	if long := strings.TrimRight(firstOf(cmd.Long, cmd.Short), " \t\n"); long != "" {
-		fmt.Fprintln(w, long)
+		fmt.Fprintln(w, long) //nolint:errcheck
 		// Prose and mechanics are separated the way the sections separate
 		// themselves from each other.
-		fmt.Fprintln(w)
+		fmt.Fprintln(w) //nolint:errcheck
 	}
 	writeUsage(w, cmd, usage)
 }
@@ -75,17 +78,17 @@ func writeUsage(w io.Writer, cmd *cobra.Command, usage bool) {
 		if name := cmd.CommandPath(); strings.HasPrefix(line, name) {
 			line = paint(styleName, name) + line[len(name):]
 		}
-		fmt.Fprintf(w, "  %s\n", line)
+		fmt.Fprintf(w, "  %s\n", line) //nolint:errcheck
 	}
 
 	if len(cmd.Aliases) > 0 {
 		s.open("Aliases:")
-		fmt.Fprintf(w, "  %s\n", cmd.NameAndAliases())
+		fmt.Fprintf(w, "  %s\n", cmd.NameAndAliases()) //nolint:errcheck
 	}
 
 	if cmd.HasExample() {
 		s.open("Examples:")
-		fmt.Fprintln(w, paint(styleExample, strings.TrimRight(cmd.Example, "\n")))
+		fmt.Fprintln(w, paint(styleExample, strings.TrimRight(cmd.Example, "\n"))) //nolint:errcheck
 	}
 
 	if cmd.HasAvailableSubCommands() {
@@ -98,19 +101,19 @@ func writeUsage(w io.Writer, cmd *cobra.Command, usage bool) {
 			// The padding is measured on the name, not on the name plus the
 			// escapes that color it, or a colored listing would not line up.
 			pad := strings.Repeat(" ", max(width-len(sub.Name()), 0))
-			fmt.Fprintf(w, "  %s%s %s\n",
+			fmt.Fprintf(w, "  %s%s %s\n", //nolint:errcheck
 				paint(styleName, sub.Name()), pad, paint(styleDescr, sub.Short))
 		}
 	}
 
 	if cmd.HasAvailableLocalFlags() {
 		s.open("Flags:")
-		fmt.Fprintln(w, flagUsages(cmd.LocalFlags()))
+		fmt.Fprintln(w, flagUsages(cmd.LocalFlags())) //nolint:errcheck
 	}
 
 	if cmd.HasAvailableInheritedFlags() {
 		s.open("Global Flags:")
-		fmt.Fprintln(w, flagUsages(cmd.InheritedFlags()))
+		fmt.Fprintln(w, flagUsages(cmd.InheritedFlags())) //nolint:errcheck
 	}
 }
 
@@ -122,10 +125,10 @@ type sections struct {
 
 func (s *sections) open(heading string) {
 	if s.seen {
-		fmt.Fprintln(s.w)
+		fmt.Fprintln(s.w) //nolint:errcheck
 	}
 	s.seen = true
-	fmt.Fprintln(s.w, paint(styleHeading, heading))
+	fmt.Fprintln(s.w, paint(styleHeading, heading)) //nolint:errcheck
 }
 
 // namePadding is how wide the subcommand column is.

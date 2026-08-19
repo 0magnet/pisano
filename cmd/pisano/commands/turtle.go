@@ -84,7 +84,7 @@ figure that looks like a plus sign.`,
 		if out == "" && split == "" {
 			for i, p := range periods {
 				if i > 0 {
-					fmt.Fprintln(stdout)
+					fmt.Fprintln(stdout) //nolint:errcheck
 				}
 				art, shape := pisano.RenderTurtle(p, pisano.TurtleOptions{
 					Reps: reps, Colorize: !plain, Tint: tintMode,
@@ -93,8 +93,8 @@ figure that looks like a plus sign.`,
 				if p.Modulus > 0 {
 					what = fmt.Sprintf("%s mod %d", p.Seq, p.Modulus)
 				}
-				fmt.Fprintf(stdout, "%s — cycle %d, %s\n\n", what, p.Len(), shape)
-				fmt.Fprint(stdout, art)
+				fmt.Fprintf(stdout, "%s — cycle %d, %s\n\n", what, p.Len(), shape) //nolint:errcheck
+				fmt.Fprint(stdout, art)                                            //nolint:errcheck
 			}
 			return nil
 		}
@@ -124,7 +124,7 @@ figure that looks like a plus sign.`,
 					return err
 				}
 			}
-			fmt.Fprintf(stderr, "wrote %d file(s) to %s\n", len(periods), split)
+			fmt.Fprintf(stderr, "wrote %d file(s) to %s\n", len(periods), split) //nolint:errcheck
 			if out == "" {
 				return nil
 			}
@@ -146,7 +146,7 @@ figure that looks like a plus sign.`,
 			return err
 		}
 		if out != "-" {
-			fmt.Fprintf(stderr, "wrote %d design(s) to %s\n", len(periods), out)
+			fmt.Fprintf(stderr, "wrote %d design(s) to %s\n", len(periods), out) //nolint:errcheck
 		}
 		return nil
 	}
