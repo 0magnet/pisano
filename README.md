@@ -763,3 +763,37 @@ None of the original's terminal-cursor interrogation came along. That existed
 because asciigraph emits uneven-width ANSI output and the drawing had to ask the
 terminal where the cursor had ended up; a canvas that knows its own cells has
 nothing to ask.
+## Dependency Graph
+
+Made with [goda](https://github.com/loov/goda):
+
+```
+# GOOS=js: the import edges of a wasm program live in js/wasm-tagged
+# files and are invisible to a host-context run
+GOOS=js GOARCH=wasm go run github.com/loov/goda@latest graph github.com/0magnet/pisano/... | dot -Tsvg -o docs/pisano-goda-graph.svg
+```
+
+![Dependency Graph](docs/pisano-goda-graph.svg "github.com/0magnet/pisano Dependency Graph")
+
+## Lines of Code
+
+Made with [gocloc](https://github.com/hhatto/gocloc) (excludes `vendor/`, `node_modules/`, `.git/`):
+
+```
+gocloc --not-match-d='(vendor|node_modules|\.git)' .
+```
+
+```
+-------------------------------------------------------------------------------
+Language                     files          blank        comment           code
+-------------------------------------------------------------------------------
+Go                              47            765           1425           6020
+HTML                             6              0              5           4471
+JavaScript                       2            117             82            935
+Markdown                         1            189              0            576
+JSON                             2              0              0             68
+Bourne Shell                     1              5             11             21
+-------------------------------------------------------------------------------
+TOTAL                           59           1076           1523          12091
+-------------------------------------------------------------------------------
+```
