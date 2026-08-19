@@ -7,6 +7,9 @@ Built after Jacob Yatsko's *[A New Way to Look at Fibonacci
 Numbers](https://www.youtube.com/watch?v=o1eLKODSCqw)*, including the questions
 the video raises and leaves open.
 
+**[Live demo](https://0magnet.github.io/pisano/)** — the renderer in a browser,
+with a shell to drive it.
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/img/fib-1-40-dark.png">
   <img alt="Fibonacci circular designs, moduli 1 to 40" src="docs/img/fib-1-40-light.png">
