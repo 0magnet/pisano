@@ -372,3 +372,68 @@ func parallel3(a, b Pt3) bool {
 func det3(a, b, c Pt3) int {
 	return a.X*(b.Y*c.Z-b.Z*c.Y) - a.Y*(b.X*c.Z-b.Z*c.X) + a.Z*(b.X*c.Y-b.Y*c.X)
 }
+
+// AxisDir is the direction the path propagates: the screw axis as a primitive
+// integer vector, or the zero vector when there is no single direction.
+//
+// This is the companion to Axis, which says where the axis line IS and not
+// which way it points. Both are needed to look down the barrel of one of these
+// figures: the point says where to aim, this says which way to face.
+//
+// Two cases, and the difference matters. When the motion has a turn, the axis
+// is the direction that turn leaves alone — the eigenvector of the rotation.
+// Summing the rotation over one full turn projects any vector onto that
+// direction (the components across the axis cancel, being the vertices of a
+// regular polygon about it), so a basis vector that does not cancel to nothing
+// gives the axis in integers, with no eigen-solving and no floating point.
+//
+// When there is no turn the rotation leaves everything alone and has no axis at
+// all; the figure is a pure translation, and the direction it propagates is its
+// drift. That is the honest answer to "which way is this going" for a path that
+// simply marches.
+//
+// The result is reduced to its primitive form, so parallel axes compare equal.
+func (s Shape3) AxisDir() Pt3 {
+	if s.Turn == IdentityFrame3 {
+		return primitive3(s.Drift)
+	}
+	k := s.Turn.Order()
+	for _, basis := range []Pt3{{X: 1}, {Y: 1}, {Z: 1}} {
+		var sum, p Pt3
+		p = basis
+		for i := 0; i < k; i++ {
+			sum = sum.Add(p)
+			p = s.Turn.Apply(p)
+		}
+		if !sum.isZero() {
+			return primitive3(sum)
+		}
+	}
+	return Pt3{}
+}
+
+// primitive3 divides a vector by the greatest common divisor of its parts, so
+// that two parallel directions are the same vector rather than two multiples of
+// one. The sign is left alone: a screw has a handedness and reversing the axis
+// would discard it.
+func primitive3(v Pt3) Pt3 {
+	g := gcd3(gcd3(abs3(v.X), abs3(v.Y)), abs3(v.Z))
+	if g <= 1 {
+		return v
+	}
+	return Pt3{X: v.X / g, Y: v.Y / g, Z: v.Z / g}
+}
+
+func gcd3(a, b int) int {
+	for b != 0 {
+		a, b = b, a%b
+	}
+	return a
+}
+
+func abs3(a int) int {
+	if a < 0 {
+		return -a
+	}
+	return a
+}

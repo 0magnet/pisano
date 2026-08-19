@@ -310,13 +310,6 @@ func TestClassify3IsStable(t *testing.T) {
 	}
 }
 
-func abs3(v int) int {
-	if v < 0 {
-		return -v
-	}
-	return v
-}
-
 // TestTheRuleReadsTheNextTerm pins the rule itself, not just the theorem it
 // satisfies. Taking the plane from a second bit of the same term also gives a
 // rigid motion and passes everything above — but it is a different figure, and
