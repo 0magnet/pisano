@@ -18,7 +18,7 @@ package tui
 import (
 	"time"
 
-	tea "charm.land/bubbletea/v2"
+	tea "github.com/0magnet/bubbletea/v2"
 )
 
 type tickMsg time.Time

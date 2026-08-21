@@ -20,7 +20,7 @@ import (
 	"io"
 	"os"
 
-	tea "charm.land/bubbletea/v2"
+	tea "github.com/0magnet/bubbletea/v2"
 	"github.com/charmbracelet/colorprofile"
 
 	"github.com/0magnet/afero"

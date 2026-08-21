@@ -3,10 +3,11 @@ module github.com/0magnet/pisano
 go 1.26
 
 require (
-	charm.land/bubbletea/v2 v2.0.9
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 )
+
+require github.com/0magnet/bubbletea/v2 v2.0.9-0.20260816230205-5aaf8ac0d36c
 
 require (
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
@@ -33,5 +34,3 @@ require (
 	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 )
-
-replace charm.land/bubbletea/v2 => github.com/0magnet/bubbletea/v2 v2.0.9-0.20260816230205-5aaf8ac0d36c
