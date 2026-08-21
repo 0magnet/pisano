@@ -7,17 +7,18 @@ replace github.com/0magnet/pisano => ../
 require (
 	charm.land/bubbletea/v2 v2.0.9
 	github.com/0magnet/afero v1.15.1-0.20260816202415-9f9d46a34dcd
-	github.com/0magnet/desk v0.0.0-20260817155011-7674fa7b29bb
-	github.com/0magnet/pisano v0.0.0-00010101000000-000000000000
-	github.com/0magnet/sh/v3 v3.13.2-0.20260814172914-eff537668adf
-	github.com/0magnet/websh v0.0.0-20260817154536-adb17a22d378
+	github.com/0magnet/desk v0.0.0-20260821232155-7ded1c828135
+	github.com/0magnet/desk/panes v0.0.0-20260821223104-b7a16e4c27a2
+	github.com/0magnet/pisano v0.0.0-20260821223114-79da5c869208
+	github.com/0magnet/sh/v3 v3.13.2-0.20260818190530-13d0024da85c
+	github.com/0magnet/websh v0.0.0-20260821231944-8cefc6a09852
 	github.com/charmbracelet/colorprofile v0.4.3
 )
 
 require (
 	github.com/0magnet/u-root v0.16.1-0.20260814161052-156e0b67262b // indirect
-	github.com/0magnet/winbox-go v0.0.0-20260817001000-977b90918c97 // indirect
-	github.com/0magnet/xterm-go v0.0.0-20260817124232-e65805e044b1 // indirect
+	github.com/0magnet/winbox-go v0.0.0-20260821223041-b2d40b5b492d // indirect
+	github.com/0magnet/xterm-go v0.0.0-20260821223040-7fc35994fbca // indirect
 	github.com/benhoyt/goawk v1.31.0 // indirect
 	github.com/charmbracelet/ultraviolet v0.0.0-20260812204455-68fa937c71be // indirect
 	github.com/charmbracelet/x/ansi v0.11.8 // indirect
