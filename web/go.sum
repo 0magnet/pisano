@@ -6,6 +6,8 @@ github.com/0magnet/desk v0.0.0-20260821232155-7ded1c828135 h1:Gn02wF6SHZM+tzQfXk
 github.com/0magnet/desk v0.0.0-20260821232155-7ded1c828135/go.mod h1:QCV2i0A93rTu3RoKaaPjp+6amT/kUpAhFo2lZ59d3Ls=
 github.com/0magnet/desk/panes v0.0.0-20260821223104-b7a16e4c27a2 h1:P40DzUIRr9ADb2+l8+mD/5B96XEYqbLMypIuZQRcXnM=
 github.com/0magnet/desk/panes v0.0.0-20260821223104-b7a16e4c27a2/go.mod h1:xPc/04J+dzbfH196oCrTSnccOgVWb8QFAzjlmqyGV00=
+github.com/0magnet/pisano v0.0.0-20260821233653-1dff16d4a6d0 h1:EmgyyDdiBQseXKd1u1GeT/vqUH/upHyrZSgtFd3G++M=
+github.com/0magnet/pisano v0.0.0-20260821233653-1dff16d4a6d0/go.mod h1:O1SvqtxujC7W/qPBEK0HY0ZGu5rTQSNaceIcgol49yE=
 github.com/0magnet/sh/v3 v3.13.2-0.20260818190530-13d0024da85c h1:qKcMe7/qRLFPbk/HWEYy5QuYY+luINKnlen9BhDPRZU=
 github.com/0magnet/sh/v3 v3.13.2-0.20260818190530-13d0024da85c/go.mod h1:IdyC3iqIKArn4KOl0a58dV2spH0PH6pLJKOZYB2kFR0=
 github.com/0magnet/u-root v0.16.1-0.20260814161052-156e0b67262b h1:1p4E2ok/rmNJU2LsGx6iMl0bIAMgl1QOC2H8doC+9ww=
