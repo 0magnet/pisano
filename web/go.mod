@@ -5,7 +5,7 @@ go 1.26
 replace github.com/0magnet/pisano => ../
 
 require (
-	charm.land/bubbletea/v2 v2.0.8
+	charm.land/bubbletea/v2 v2.0.9
 	github.com/0magnet/afero v1.15.1-0.20260816202415-9f9d46a34dcd
 	github.com/0magnet/desk v0.0.0-20260817155011-7674fa7b29bb
 	github.com/0magnet/pisano v0.0.0-00010101000000-000000000000
@@ -19,8 +19,8 @@ require (
 	github.com/0magnet/winbox-go v0.0.0-20260817001000-977b90918c97 // indirect
 	github.com/0magnet/xterm-go v0.0.0-20260817124232-e65805e044b1 // indirect
 	github.com/benhoyt/goawk v1.31.0 // indirect
-	github.com/charmbracelet/ultraviolet v0.0.0-20260703014108-f5a850f9c2b7 // indirect
-	github.com/charmbracelet/x/ansi v0.11.7 // indirect
+	github.com/charmbracelet/ultraviolet v0.0.0-20260812204455-68fa937c71be // indirect
+	github.com/charmbracelet/x/ansi v0.11.8 // indirect
 	github.com/charmbracelet/x/term v0.2.2 // indirect
 	github.com/charmbracelet/x/termios v0.1.1 // indirect
 	github.com/charmbracelet/x/windows v0.2.2 // indirect
@@ -38,7 +38,7 @@ require (
 	// 3m0s, timing out". Nothing here needs what the newer versions added, and
 	// the browser build is not worth losing over it. charmbracelet/x/ansi
 	// follows it down: v0.11.8 is the release that requires the newer one.
-	github.com/mattn/go-runewidth v0.0.23 // indirect
+	github.com/mattn/go-runewidth v0.0.28 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/spf13/cobra v1.10.2 // indirect
