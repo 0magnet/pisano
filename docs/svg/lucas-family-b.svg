@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="380" height="380" viewBox="0 0 380 380">
+<style>
+  .ring  { fill: none; stroke-width: 0.5; }
+  .chord { fill: none; stroke-linecap: round; stroke-opacity: 0.85; }
+  .path  { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .cap   { text-anchor: middle;
+           font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .bg    { fill: #ffffff; }
+  .ring  { stroke: #d8d8d8; }
+  .chord, .path { stroke: #1b3a5c; }
+  .pt    { fill: #b03a2e; }
+  .cap   { fill: #666; }
+  .p0 { stroke: #1b3a5c; }
+  .p1 { stroke: #b03a2e; }
+  .p2 { stroke: #2e7d5b; }
+  .p3 { stroke: #7a5aa8; }
+  .p4 { stroke: #b8860b; }
+  .p5 { stroke: #2e6d8e; }
+  @media (prefers-color-scheme: dark) {
+  .bg    { fill: #12141a; }
+  .ring  { stroke: #2c313c; }
+  .chord, .path { stroke: #8fc6f0; }
+  .pt    { fill: #e8825f; }
+  .cap   { fill: #7d8694; }
+  .p0 { stroke: #8fc6f0; }
+  .p1 { stroke: #e8825f; }
+  .p2 { stroke: #7fd1a8; }
+  .p3 { stroke: #b9a3e3; }
+  .p4 { stroke: #e0c060; }
+  .p5 { stroke: #6fb3d2; }
+  }
+</style>
+<rect class="bg" width="380" height="380"/>
+<g transform="translate(19.48,11.40)">
+<circle class="ring" cx="75.52" cy="75.52" r="75.52" stroke-width="0.60"/>
+<path class="chord" stroke-width="0.86" d="M75.52 0.00L18.45 124.98M116.36 11.99L144.22 44.15M116.36 11.99L150.28 86.27M144.22 44.15L34.69 11.99M150.28 86.27L132.60 124.98M150.28 86.27L18.45 124.98M150.28 86.27L34.69 11.99M132.60 124.98L18.45 124.98"/>
+<circle class="pt" cx="75.52" cy="0.00" r="1.66"/>
+<circle class="pt" cx="116.36" cy="11.99" r="1.66"/>
+<circle class="pt" cx="144.22" cy="44.15" r="1.66"/>
+<circle class="pt" cx="150.28" cy="86.27" r="1.66"/>
+<circle class="pt" cx="132.60" cy="124.98" r="1.66"/>
+<circle class="pt" cx="96.80" cy="147.99" r="1.66"/>
+<circle class="pt" cx="54.25" cy="147.99" r="1.66"/>
+<circle class="pt" cx="18.45" cy="124.98" r="1.66"/>
+<circle class="pt" cx="0.77" cy="86.27" r="1.66"/>
+<circle class="pt" cx="6.83" cy="44.15" r="1.66"/>
+<circle class="pt" cx="34.69" cy="11.99" r="1.66"/>
+</g>
+<text class="cap" x="95.00" y="184.30" font-size="13.2">m=11 · π=10 · 1z</text>
+<g transform="translate(209.48,11.40)">
+<circle class="ring" cx="75.52" cy="75.52" r="75.52" stroke-width="0.60"/>
+<path class="chord" stroke-width="0.86" d="M75.52 0.00L23.59 130.36M91.76 1.77L107.24 6.98M91.76 1.77L121.23 15.40M107.24 6.98L59.29 1.77M121.23 15.40L133.09 26.63M121.23 15.40L17.96 26.63M121.23 15.40L59.29 1.77M133.09 26.63L150.94 71.44M150.94 71.44L127.46 130.36M150.94 71.44L23.59 130.36M150.94 71.44L17.96 26.63M127.46 130.36L23.59 130.36"/>
+<circle class="pt" cx="75.52" cy="0.00" r="1.66"/>
+<circle class="pt" cx="91.76" cy="1.77" r="1.66"/>
+<circle class="pt" cx="107.24" cy="6.98" r="1.66"/>
+<circle class="pt" cx="121.23" cy="15.40" r="1.66"/>
+<circle class="pt" cx="133.09" cy="26.63" r="1.66"/>
+<circle class="pt" cx="142.25" cy="40.15" r="1.66"/>
+<circle class="pt" cx="148.30" cy="55.32" r="1.66"/>
+<circle class="pt" cx="150.94" cy="71.44" r="1.66"/>
+<circle class="pt" cx="150.06" cy="87.74" r="1.66"/>
+<circle class="pt" cx="145.69" cy="103.48" r="1.66"/>
+<circle class="pt" cx="138.04" cy="117.91" r="1.66"/>
+<circle class="pt" cx="127.46" cy="130.36" r="1.66"/>
+<circle class="pt" cx="114.46" cy="140.24" r="1.66"/>
+<circle class="pt" cx="99.64" cy="147.10" r="1.66"/>
+<circle class="pt" cx="83.69" cy="150.61" r="1.66"/>
+<circle class="pt" cx="67.36" cy="150.61" r="1.66"/>
+<circle class="pt" cx="51.41" cy="147.10" r="1.66"/>
+<circle class="pt" cx="36.59" cy="140.24" r="1.66"/>
+<circle class="pt" cx="23.59" cy="130.36" r="1.66"/>
+<circle class="pt" cx="13.01" cy="117.91" r="1.66"/>
+<circle class="pt" cx="5.36" cy="103.48" r="1.66"/>
+<circle class="pt" cx="0.99" cy="87.74" r="1.66"/>
+<circle class="pt" cx="0.11" cy="71.44" r="1.66"/>
+<circle class="pt" cx="2.75" cy="55.32" r="1.66"/>
+<circle class="pt" cx="8.80" cy="40.15" r="1.66"/>
+<circle class="pt" cx="17.96" cy="26.63" r="1.66"/>
+<circle class="pt" cx="29.82" cy="15.40" r="1.66"/>
+<circle class="pt" cx="43.81" cy="6.98" r="1.66"/>
+<circle class="pt" cx="59.29" cy="1.77" r="1.66"/>
+</g>
+<text class="cap" x="285.00" y="184.30" font-size="13.2">m=29 · π=14 · 1z</text>
+<g transform="translate(19.48,201.40)">
+<circle class="ring" cx="75.52" cy="75.52" r="75.52" stroke-width="0.60"/>
+<path class="chord" stroke-width="0.86" d="M75.52 0.00L24.37 131.09M81.76 0.26L87.96 1.03M81.76 0.26L94.07 2.31M87.96 1.03L69.29 0.26M94.07 2.31L100.05 4.09M94.07 2.31L51.00 4.09M94.07 2.31L69.29 0.26M100.05 4.09L116.83 12.30M116.83 12.30L135.12 29.14M116.83 12.30L15.93 29.14M116.83 12.30L51.00 4.09M135.12 29.14L150.79 69.29M150.79 69.29L126.68 131.09M150.79 69.29L24.37 131.09M150.79 69.29L15.93 29.14M126.68 131.09L24.37 131.09"/>
+</g>
+<text class="cap" x="95.00" y="374.30" font-size="13.2">m=76 · π=18 · 1z</text>
+</svg>

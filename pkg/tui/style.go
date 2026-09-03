@@ -1,0 +1,92 @@
+package tui
+
+import (
+	"strings"
+	"unicode/utf8"
+)
+
+// ANSI styling, written out directly rather than through a styling library.
+//
+// The canvas renderers already emit raw SGR codes for the path colors, so the
+// chrome using the same mechanism means one way of doing it rather than two.
+// It also drops the dependency chain — lipgloss, and termenv underneath it —
+// whose package initialisation queried the terminal for its background color
+// and blocked for five seconds when nothing answered.
+//
+// These are the standard bright ANSI slots rather than fixed RGB, so they keep
+// following whatever palette the terminal is themed with.
+const (
+	sgrReset = "\x1b[0m"
+	sgrTitle = "\x1b[1;94m" // bold bright blue
+	sgrDim   = "\x1b[90m"   // bright black
+	sgrKey   = "\x1b[96m"   // bright cyan
+	sgrWarn  = "\x1b[93m"   // bright yellow
+)
+
+// paint wraps s unless color is off. Nested spans reset back to the outer
+// style rather than to plain, so a highlighted key inside a dim line leaves the
+// rest of that line dim.
+func (m Model) paint(code, s string) string {
+	if !m.color || s == "" {
+		return s
+	}
+	return code + s + sgrReset
+}
+
+func (m Model) title(s string) string { return m.paint(sgrTitle, s) }
+func (m Model) dim(s string) string   { return m.paint(sgrDim, s) }
+func (m Model) warn(s string) string  { return m.paint(sgrWarn, s) }
+
+// key highlights a keystroke inside a dim run, so it has to restore the dim
+// rather than reset to nothing.
+func (m Model) key(s string) string {
+	if !m.color {
+		return s
+	}
+	return sgrKey + s + sgrReset + sgrDim
+}
+
+// height counts the lines a block occupies, which is what the layout needs and
+// all that was ever wanted from lipgloss.Height.
+func height(s string) int { return strings.Count(s, "\n") + 1 }
+
+// clip truncates a styled string to w visible cells.
+//
+// A full-screen program must never emit a line longer than the terminal, or the
+// terminal wraps it — and then the chrome occupies more rows than the layout
+// budgeted, pushing the top of the drawing off the screen. The escape sequences
+// have to be skipped rather than counted, since they take no space, and a
+// truncated line has to be closed off so its color does not leak.
+func clip(s string, w int) string {
+	if w < 1 {
+		return ""
+	}
+	var b strings.Builder
+	seen, styled := 0, false
+	for i := 0; i < len(s); {
+		if s[i] == 0x1b {
+			j := i
+			for j < len(s) && s[j] != 'm' {
+				j++
+			}
+			if j < len(s) {
+				j++
+			}
+			b.WriteString(s[i:j])
+			styled = true
+			i = j
+			continue
+		}
+		r, size := utf8.DecodeRuneInString(s[i:])
+		if seen >= w {
+			if styled {
+				b.WriteString(sgrReset)
+			}
+			return b.String()
+		}
+		b.WriteRune(r)
+		seen++
+		i += size
+	}
+	return s
+}
