@@ -7,7 +7,15 @@ require (
 	github.com/spf13/pflag v1.0.10
 )
 
-require github.com/0magnet/bubbletea/v2 v2.0.9-0.20260816230205-5aaf8ac0d36c
+require (
+	github.com/0magnet/bubbletea/v2 v2.0.9-0.20260816230205-5aaf8ac0d36c
+	github.com/0magnet/coloredcobra v1.0.2
+)
+
+require (
+	github.com/fatih/color v1.16.0 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+)
 
 require (
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
