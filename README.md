@@ -241,7 +241,7 @@ terminals.
 Bubble Tea v1 shipped a package `init()` that called `lipgloss.HasDarkBackground()`,
 which asks the terminal for its background color (`OSC 11`) and waits up to
 `termenv.OSCTimeout` — **five seconds** — for a reply. Because it was package
-initialisation it ran before `main()`, so it stalled *every* command in the
+initialization it ran before `main()`, so it stalled *every* command in the
 binary, `period` and `gallery` included, on any terminal that does not answer.
 
 v2 deletes the workaround along with its cause: no `init()` anywhere in the
@@ -279,7 +279,7 @@ and one that does not never reports a period.
 
 `--mul n` multiplies the Fibonacci sequence through by n. The plain designs then
 reappear at every nth modulus with new ones interleaved between them, which is
-the video's "design m/k" labelling: m is the modulus, n the multiplier. It is
+the video's "design m/k" labeling: m is the modulus, n the multiplier. It is
 not "mod m/n" — a modulus is always an integer.
 
 ## The open questions
@@ -578,7 +578,7 @@ Multiplying the sequence through by 2 makes the plain designs reappear at every 
 
 ### Fibonacci × 3, moduli 1–24
 
-Every 3rd modulus, and so on — the "design m/k" labelling.
+Every 3rd modulus, and so on — the "design m/k" labeling.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/img/fib-x3-1-24-dark.png">
