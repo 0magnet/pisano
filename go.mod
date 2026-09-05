@@ -13,13 +13,13 @@ require (
 )
 
 require (
-	github.com/fatih/color v1.16.0 // indirect
-	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/fatih/color v1.19.0 // indirect
+	github.com/mattn/go-colorable v0.1.15 // indirect
 )
 
 require (
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
-	github.com/charmbracelet/ultraviolet v0.0.0-20260812204455-68fa937c71be // indirect
+	github.com/charmbracelet/ultraviolet v0.0.0-20260903151058-ae99b731b8c5 // indirect
 	github.com/charmbracelet/x/ansi v0.11.8 // indirect
 	github.com/charmbracelet/x/term v0.2.2 // indirect
 	github.com/charmbracelet/x/termios v0.1.1 // indirect
@@ -35,7 +35,7 @@ require (
 	// 3m0s, timing out". Nothing here needs what the newer versions added, and
 	// the browser build is not worth losing over it. charmbracelet/x/ansi
 	// follows it down: v0.11.8 is the release that requires the newer one.
-	github.com/mattn/go-runewidth v0.0.28 // indirect
+	github.com/mattn/go-runewidth v0.0.29 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/xo/terminfo v1.0.0 // indirect
