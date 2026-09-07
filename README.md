@@ -7,8 +7,8 @@ Built after Jacob Yatsko's *[A New Way to Look at Fibonacci
 Numbers](https://www.youtube.com/watch?v=o1eLKODSCqw)*, including the questions
 the video raises and leaves open.
 
-**[Live demo](https://0magnet.github.io/pisano/)** (TinyGo build) ·
-**[standard Go build](https://0magnet.github.io/pisano/go/)** — the renderer in
+**[Live demo](https://pisano.magnetosphere.net/)** (TinyGo build) ·
+**[standard Go build](https://pisano.magnetosphere.net/go/)** — the renderer in
 a browser, with a shell to drive it.
 
 <picture>
@@ -37,8 +37,8 @@ go run . circle --mod 1-40 -o sheet.svg
 go run . circle --mod 8,13,21,34,55,89 --cols 3 --cell 260 -o families.svg
 ```
 
-▸ [the sheet](https://0magnet.github.io/pisano/?run=pisano%20circle%20--mod%201-40%20-o%20sheet.svg%20%26%26%20view%20sheet.svg)
-· [the families](https://0magnet.github.io/pisano/?run=pisano%20circle%20--mod%208%2C13%2C21%2C34%2C55%2C89%20--cols%203%20--cell%20260%20-o%20families.svg%20%26%26%20view%20families.svg)
+▸ [the sheet](https://pisano.magnetosphere.net/?run=pisano%20circle%20--mod%201-40%20-o%20sheet.svg%20%26%26%20view%20sheet.svg)
+· [the families](https://pisano.magnetosphere.net/?run=pisano%20circle%20--mod%208%2C13%2C21%2C34%2C55%2C89%20--cols%203%20--cell%20260%20-o%20families.svg%20%26%26%20view%20families.svg)
 
 **Turtle paths.** Read each term as an instruction: odd turns left and steps
 forward, even turns right and steps forward, zero does neither. Terminal text by
@@ -53,10 +53,10 @@ go run . turtle --mod 1-40 -o paths.html      # page of inline SVG
 go run . turtle --mod 8,21,55 --split web/    # one file each, for a site
 ```
 
-▸ [`--mod 10`](https://0magnet.github.io/pisano/?run=pisano%20turtle%20--mod%2010)
-· [`--mod 0`](https://0magnet.github.io/pisano/?run=pisano%20turtle%20--mod%200)
-· [`--tint heading`](https://0magnet.github.io/pisano/?run=pisano%20turtle%20--mod%2025%20--tint%20heading)
-· [the vector sheet](https://0magnet.github.io/pisano/?run=pisano%20turtle%20--mod%201-40%20-o%20paths.svg%20%26%26%20view%20paths.svg)
+▸ [`--mod 10`](https://pisano.magnetosphere.net/?run=pisano%20turtle%20--mod%2010)
+· [`--mod 0`](https://pisano.magnetosphere.net/?run=pisano%20turtle%20--mod%200)
+· [`--tint heading`](https://pisano.magnetosphere.net/?run=pisano%20turtle%20--mod%2025%20--tint%20heading)
+· [the vector sheet](https://pisano.magnetosphere.net/?run=pisano%20turtle%20--mod%201-40%20-o%20paths.svg%20%26%26%20view%20paths.svg)
 
 **Watch it draw.** `tui` opens the designs in the alternate screen and animates
 them. This is the one for paths that never close — see below.
@@ -67,9 +67,9 @@ go run . tui --mod 11              # a closed path, recoloring each lap
 go run . tui --circle --mod 10     # trace the chords in sequence order
 ```
 
-▸ [the open path](https://0magnet.github.io/pisano/?run=pisano%20tui)
-· [the closed one](https://0magnet.github.io/pisano/?run=pisano%20tui%20--mod%2011)
-· [the chords](https://0magnet.github.io/pisano/?run=pisano%20tui%20--circle%20--mod%2010)
+▸ [the open path](https://pisano.magnetosphere.net/?run=pisano%20tui)
+· [the closed one](https://pisano.magnetosphere.net/?run=pisano%20tui%20--mod%2011)
+· [the chords](https://pisano.magnetosphere.net/?run=pisano%20tui%20--circle%20--mod%2010)
 
 **Everything at once.** `gallery` builds a single self-contained page holding
 every figure the video walks through, in the order it introduces them, and
@@ -87,8 +87,8 @@ fib mod 10: period 60, 4 zero(s)
   terms:  [0 1 1 2 3 5 8 3 1 4 5 9 4 3 7 0 7 7 4 1 5 6 1 7 8 5 3 8 1 9 ...]
 ```
 
-▸ [the period](https://0magnet.github.io/pisano/?run=pisano%20period%20--mod%2010)
-· [the sweep](https://0magnet.github.io/pisano/?run=pisano%20sweep%20--max%20300)
+▸ [the period](https://pisano.magnetosphere.net/?run=pisano%20period%20--mod%2010)
+· [the sweep](https://pisano.magnetosphere.net/?run=pisano%20sweep%20--max%20300)
 
 ## Output formats
 
@@ -367,10 +367,10 @@ $ go run . sweep --max 60 --dupes
 ## In the browser
 
 The same designs, driven from a shell, compiled to WebAssembly:
-**[0magnet.github.io/pisano](https://0magnet.github.io/pisano/)** — a desktop,
+**[pisano.magnetosphere.net](https://pisano.magnetosphere.net/)** — a desktop,
 with the shell in one window and whatever it draws in another. TinyGo by
-default; the [standard Go build](https://0magnet.github.io/pisano/go/) is linked
-from the page header, as is the [gallery](https://0magnet.github.io/pisano/gallery/).
+default; the [standard Go build](https://pisano.magnetosphere.net/go/) is linked
+from the page header, as is the [gallery](https://pisano.magnetosphere.net/gallery/).
 
 ```
 pisano:~$ pisano tui                                 the viewer, full screen
@@ -393,9 +393,9 @@ as though typed — echoed after the prompt, added to the history, run — so wh
 ran is on the screen and not only in the address bar.
 
 ```
-https://0magnet.github.io/pisano/?run=pisano+turtle+--mod+25
-https://0magnet.github.io/pisano/?run=pisano+circle+--mod+8,13,21,34+-o+s.svg+%26%26+view+s.svg
-https://0magnet.github.io/pisano/?run=first&run=second
+https://pisano.magnetosphere.net/?run=pisano+turtle+--mod+25
+https://pisano.magnetosphere.net/?run=pisano+circle+--mod+8,13,21,34+-o+s.svg+%26%26+view+s.svg
+https://pisano.magnetosphere.net/?run=first&run=second
 ```
 
 One parameter is one line, and repeating it runs them in order. `&&` needs

@@ -101,7 +101,7 @@ const (
 
 // linkedCommands reads the commands a link asked for.
 //
-//	https://0magnet.github.io/pisano/?run=pisano+turtle+--mod+25
+//	https://pisano.magnetosphere.net/?run=pisano+turtle+--mod+25
 //	…?run=pisano+circle+--mod+8,13,21,34+-o+s.svg+%26%26+view+s.svg
 //	…?run=first&run=second          one parameter per line, in order
 //
