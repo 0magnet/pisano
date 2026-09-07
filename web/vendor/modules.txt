@@ -9,11 +9,11 @@ github.com/0magnet/bubbletea/v2
 # github.com/0magnet/coloredcobra v1.0.3
 ## explicit; go 1.25.0
 github.com/0magnet/coloredcobra
-# github.com/0magnet/desk v0.0.0-20260906155330-9925d12693bb
+# github.com/0magnet/desk v0.0.0-20260907202244-40230f775b1c
 ## explicit; go 1.26
 github.com/0magnet/desk
 github.com/0magnet/desk/dom
-# github.com/0magnet/desk/panes v0.0.0-20260906155330-9925d12693bb
+# github.com/0magnet/desk/panes v0.0.0-20260907202244-40230f775b1c
 ## explicit; go 1.26
 github.com/0magnet/desk/panes/files
 github.com/0magnet/desk/panes/hostauth
@@ -21,7 +21,7 @@ github.com/0magnet/desk/panes/hostfs
 github.com/0magnet/desk/panes/hostproto
 github.com/0magnet/desk/panes/term
 github.com/0magnet/desk/panes/viewer
-# github.com/0magnet/pisano v0.0.0-20260905172022-2885ec4c921a
+# github.com/0magnet/pisano v0.0.0-20260907164814-34667a782f4c
 ## explicit; go 1.26
 github.com/0magnet/pisano/cmd/pisano/commands
 github.com/0magnet/pisano/pkg/flags
@@ -38,15 +38,15 @@ github.com/0magnet/sh/v3/syntax
 # github.com/0magnet/u-root v0.16.1-0.20260814161052-156e0b67262b
 ## explicit; go 1.25.7
 github.com/0magnet/u-root/pkg/ls
-# github.com/0magnet/websh v0.0.0-20260906001908-5f8df8dbc4c5
+# github.com/0magnet/websh v0.0.0-20260907164820-23f622ba4adb
 ## explicit; go 1.25.7
 github.com/0magnet/websh/shell
 github.com/0magnet/websh/shell/browser
 github.com/0magnet/websh/web
-# github.com/0magnet/winbox-go v0.0.0-20260905172045-cfee586c8360
+# github.com/0magnet/winbox-go v0.0.0-20260907164818-1573f12aafdd
 ## explicit; go 1.24
 github.com/0magnet/winbox-go
-# github.com/0magnet/xterm-go v0.0.0-20260905172047-f0008e1479ee
+# github.com/0magnet/xterm-go v0.0.0-20260907164817-c5d24e1daacc
 ## explicit; go 1.24
 github.com/0magnet/xterm-go
 github.com/0magnet/xterm-go/vt
