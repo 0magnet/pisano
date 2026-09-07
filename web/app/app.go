@@ -27,8 +27,8 @@ import (
 	"github.com/0magnet/sh/v3/interp"
 	"github.com/0magnet/websh/shell"
 
+	"github.com/0magnet/calvin/clihelp"
 	"github.com/0magnet/pisano/cmd/pisano/commands"
-	"github.com/0magnet/pisano/pkg/flags"
 	"github.com/0magnet/pisano/pkg/tui"
 )
 
@@ -36,7 +36,7 @@ import (
 func Register() {
 	// The same help styling the terminal binary uses. websh renders ANSI, so
 	// there is no reason for the browser's help to be the plain one.
-	flags.InitFlags(commands.RootCmd, true)
+	clihelp.Init(commands.RootCmd, "pisano", true)
 
 	shell.RegisterApplet("pisano", "Pisano period designs (try: pisano tui)",
 		func(ctx context.Context, s *shell.Shell, hc *interp.HandlerContext, args []string) int {

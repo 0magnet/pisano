@@ -1,6 +1,6 @@
 //go:build !js
 
-package flags
+package clihelp
 
 import (
 	"os"

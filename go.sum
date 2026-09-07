@@ -1,5 +1,7 @@
 github.com/0magnet/bubbletea/v2 v2.0.9-0.20260816230205-5aaf8ac0d36c h1:LMozNBu///rc66V6DGSLV5EdE+fqGw/AybcjKw4DO5w=
 github.com/0magnet/bubbletea/v2 v2.0.9-0.20260816230205-5aaf8ac0d36c/go.mod h1:7PcSwxVFlrp0u+MnM80K8EyDBJb/tCvJat+jsJdDY8s=
+github.com/0magnet/calvin v0.0.0-20260907205746-bc8391f278ed h1:aJG8gRjJFhEmPuGhq/RMU5n3FvB1S+bd2ydXRzpmWH4=
+github.com/0magnet/calvin v0.0.0-20260907205746-bc8391f278ed/go.mod h1:6gk/Jj3FgEZaK/d+bg1haY6POgkjFliBGHp9pzAfPLU=
 github.com/0magnet/coloredcobra v1.0.3 h1:s/3WW+wAssjMEKgzlXWcQ6PGSoKJIoambL68ytXRr00=
 github.com/0magnet/coloredcobra v1.0.3/go.mod h1:Kn7dmRJcnVybFNKY0FNUjLcsivW4FCbAec8ZfVmz51I=
 github.com/aymanbagabas/go-udiff v0.2.0 h1:TK0fH4MteXUDspT88n8CKzvK0X9O2xu9yQjWpi6yML8=

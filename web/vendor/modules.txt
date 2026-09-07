@@ -6,6 +6,10 @@ github.com/0magnet/afero/mem
 # github.com/0magnet/bubbletea/v2 v2.0.9-0.20260816230205-5aaf8ac0d36c
 ## explicit; go 1.25.0
 github.com/0magnet/bubbletea/v2
+# github.com/0magnet/calvin v0.0.0-20260907204538-e831a13893a7
+## explicit; go 1.25.0
+github.com/0magnet/calvin
+github.com/0magnet/calvin/clihelp
 # github.com/0magnet/coloredcobra v1.0.3
 ## explicit; go 1.25.0
 github.com/0magnet/coloredcobra
@@ -21,10 +25,9 @@ github.com/0magnet/desk/panes/hostfs
 github.com/0magnet/desk/panes/hostproto
 github.com/0magnet/desk/panes/term
 github.com/0magnet/desk/panes/viewer
-# github.com/0magnet/pisano v0.0.0-20260907164814-34667a782f4c
+# github.com/0magnet/pisano v0.0.0-20260907202653-0c0202e436fb
 ## explicit; go 1.26
 github.com/0magnet/pisano/cmd/pisano/commands
-github.com/0magnet/pisano/pkg/flags
 github.com/0magnet/pisano/pkg/pisano
 github.com/0magnet/pisano/pkg/tui
 # github.com/0magnet/sh/v3 v3.13.2-0.20260818190530-13d0024da85c

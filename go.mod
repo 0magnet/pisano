@@ -9,6 +9,7 @@ require (
 
 require (
 	github.com/0magnet/bubbletea/v2 v2.0.9-0.20260816230205-5aaf8ac0d36c
+	github.com/0magnet/calvin v0.0.0-20260907205746-bc8391f278ed
 	github.com/0magnet/coloredcobra v1.0.3
 )
 
@@ -28,7 +29,7 @@ require (
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.1 // indirect
-	github.com/mattn/go-isatty v0.0.24
+	github.com/mattn/go-isatty v0.0.24 // indirect
 	// Held here: from v0.0.27 go-runewidth builds a width lookup table in a
 	// package init, and TinyGo evaluates package initialisers at compile time
 	// with an interpreter that gives up on it — "interp: running for more than
