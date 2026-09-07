@@ -10,7 +10,7 @@ import (
 // The canvas renderers already emit raw SGR codes for the path colors, so the
 // chrome using the same mechanism means one way of doing it rather than two.
 // It also drops the dependency chain — lipgloss, and termenv underneath it —
-// whose package initialisation queried the terminal for its background color
+// whose package initialization queried the terminal for its background color
 // and blocked for five seconds when nothing answered.
 //
 // These are the standard bright ANSI slots rather than fixed RGB, so they keep

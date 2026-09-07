@@ -15,6 +15,10 @@ set -eu
 cd "$(dirname "$0")"
 
 build_tinygo() {
+	# TinyGo trails each new Go release by some weeks; until it catches up, a
+	# build against the newer Go fails outright. The helper reports the newest
+	# Go this TinyGo accepts, or "auto" once the system one will do.
+	GOTOOLCHAIN=$(sh scripts/tinygo-toolchain.sh); export GOTOOLCHAIN
 	mkdir -p docs
 	# The demo composes the desk with its panes, so it is built from the
 	# panes module; the desk itself does not know they exist.

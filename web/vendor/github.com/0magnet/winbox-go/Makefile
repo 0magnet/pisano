@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help format tidy lint vet test test-wasm test-browser cover check install-linters docs
+.PHONY: help format tidy lint vet test test-wasm test-browser cover check install-linters docs dist
 
 # The targets that matter are `format` and `check`, and they mean the same
 # thing here as in 0pcom/skywire, which is the reference for these repos.
@@ -90,7 +90,7 @@ lint: ## Run golangci-lint. Needs it installed (make install-linters)
 	fi
 	@# A host run cannot see js/wasm-tagged files, so anything only they use
 	@# reads as dead — and anything wrong inside them is never checked at all.
-	@if grep -rlq '^//go:build js' --include='*.go' . 2>/dev/null; then \
+	@if grep -rlq '^//go:build js' --include='*.go' --exclude-dir=vendor . 2>/dev/null; then \
 		echo '--- again in the js/wasm build context'; \
 		CGO_ENABLED=0 GOOS=js GOARCH=wasm ${OPTS} golangci-lint run --modules-download-mode=$(MODMODE) -c $(LINTCFG) $(JSPKGS); \
 	fi
@@ -100,7 +100,7 @@ vet: ## Run go vet
 	@if [ -n "$(PKGS)" ]; then \
 		CGO_ENABLED=$(CGO) ${OPTS} go vet $(PKGS); \
 	fi
-	@if grep -rlq '^//go:build js' --include='*.go' . 2>/dev/null; then \
+	@if grep -rlq '^//go:build js' --include='*.go' --exclude-dir=vendor . 2>/dev/null; then \
 		CGO_ENABLED=0 GOOS=js GOARCH=wasm ${OPTS} go vet $(JSPKGS); \
 	fi
 	$(recurse)
@@ -110,22 +110,30 @@ test: ## Run tests. Falls back to the js/wasm ones where nothing builds here
 		${OPTS} go test $(PKGS); \
 	else \
 		echo '--- nothing builds for this host; running the js/wasm tests instead'; \
-		$(MAKE) --no-print-directory test-wasm; \
+		$(MAKE) --no-print-directory -f $(THIS) test-wasm; \
 	fi
 	$(recurse)
 
 # The exec wrapper Go ships for running a js/wasm binary under Node. It is what
 # makes `go test` work for code the host cannot build at all.
-WASMEXEC = $(shell go env GOROOT)/lib/wasm/go_js_wasm_exec
+# The wrapper moved from misc/wasm to lib/wasm in Go 1.24, and CI may install
+# either side of that, so both are tried. Empty means this toolchain cannot
+# run js/wasm tests at all.
+WASMEXEC = $(shell for d in lib misc; do p="$$(go env GOROOT)/$$d/wasm/go_js_wasm_exec"; if [ -x "$$p" ]; then echo "$$p"; break; fi; done)
 
 test-wasm: ## Run the js/wasm tests under Node
-	@if [ ! -x "$(WASMEXEC)" ]; then \
-		echo 'no js/wasm exec wrapper in this Go installation; skipping'; exit 0; fi
-	@command -v node >/dev/null || { echo 'node is not installed; skipping'; exit 0; }
+	@# One shell for the whole target. An `exit 0` in a recipe line of its own
+	@# ends that line and nothing else, so the earlier form announced it was
+	@# skipping and then ran the tests regardless, against the exec wrapper it
+	@# had just reported missing.
 	@# Node has no DOM: document, window and requestAnimationFrame are all
 	@# undefined. JS core is there, and a fake document can be installed from
 	@# Go with js.Global().Set, which is how the DOM-facing code is covered.
-	@if [ -n "$(JSPKGS)" ]; then \
+	@if [ -z "$(WASMEXEC)" ]; then \
+		echo 'no js/wasm exec wrapper in this Go installation; skipping'; \
+	elif ! command -v node >/dev/null; then \
+		echo 'node is not installed; skipping'; \
+	elif [ -n "$(JSPKGS)" ]; then \
 		CGO_ENABLED=0 GOOS=js GOARCH=wasm ${OPTS} go test -exec="$(WASMEXEC)" $(JSPKGS); \
 	else \
 		echo 'no js/wasm packages'; \
@@ -170,3 +178,11 @@ install-linters: ## Install the linters
 
 docs: ## Regenerate the dependency graph and code counts in the README
 	./gendocs.sh
+
+dist: ## Rebuild the COMMITTED dist/ assets (winbox.wasm.gz + winbox-exec.js) from cmd/winbox-js. Needs tinygo. Deterministic gzip (-n) so an unchanged module yields no diff.
+	@command -v tinygo >/dev/null 2>&1 || { echo "tinygo not installed"; exit 1; }
+	GOTOOLCHAIN=$$(sh scripts/tinygo-toolchain.sh) tinygo build -o /tmp/winbox-dist.wasm -target wasm -no-debug -opt=z ./cmd/winbox-js
+	gzip -9 -n -c /tmp/winbox-dist.wasm > ./dist/winbox.wasm.gz
+	rm -f /tmp/winbox-dist.wasm
+	@sh ./scripts/wrap-wasm-exec.sh "$$(tinygo env TINYGOROOT)/targets/wasm_exec.js" ./dist/winbox-exec.js
+	@echo "updated dist/ (winbox.wasm.gz + winbox-exec.js) — review with 'git status', commit intentionally."

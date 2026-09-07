@@ -84,6 +84,17 @@ type App struct {
 	// Open builds a pane. args are whatever Launch was given, so an app can
 	// take a filename or a mode without the desk knowing what either means.
 	Open func(args []string) (Pane, error)
+
+	// Run is an alternative to Open for an entry that is NOT a window the desk
+	// owns: it is called instead, and no pane is built and no window opened.
+	//
+	// It exists for the case of an application that is hosting the desk rather
+	// than being hosted by it — chaosrack keeps its control panel in a window
+	// of its own, so it can appear in the launcher beside real desk apps
+	// without pretending the desk created it. Set one or the other; Run wins if
+	// both are set, since an app that can do its own thing has no use for a
+	// pane the desk would wrap it in.
+	Run func(args []string) error
 }
 
 var (
@@ -150,6 +161,15 @@ func LaunchOpts(name string, opt Options, args ...string) (*winbox.WinBox, error
 	app, ok := Lookup(name)
 	if !ok {
 		return nil, fmt.Errorf("desk: no app named %q", name)
+	}
+	// An entry that runs itself. Nothing is mounted and no window is made, so
+	// there is no WinBox to hand back — the caller gets nil and no error, which
+	// is the honest answer to "which window did that open".
+	if app.Run != nil {
+		return nil, app.Run(args)
+	}
+	if app.Open == nil {
+		return nil, fmt.Errorf("desk: app %q has neither Open nor Run", name)
 	}
 	pane, err := app.Open(args)
 	if err != nil {
@@ -229,18 +249,20 @@ func LaunchOpts(name string, opt Options, args ...string) (*winbox.WinBox, error
 	win := winbox.New(o)
 
 	// Mount after creation: the body exists and has been sized by now, which
-	// a pane that measures itself in pixels depends on.
-	if err := pane.Mount(win.Body); err != nil {
+	// a pane that measures itself in pixels depends on. Every window gets a
+	// tab set even for its first pane — see tabs_js.go for why one cannot be
+	// retrofitted later.
+	ts := newTabset(win)
+	if err := ts.add(pane, title); err != nil {
+		dropTabset(win)
 		win.Close(true)
 		pane.Close()
 		return nil, err
 	}
 
-	if r, ok := pane.(Resizer); ok {
-		win.OnResize = func(_ *winbox.WinBox, width, height float64) {
-			r.Resize(width, height)
-		}
-	}
+	// The front pane is told the size of the views box, not the window: with a
+	// tab strip showing, the two differ by its height.
+	win.OnResize = func(_ *winbox.WinBox, _, _ float64) { ts.resize() }
 
 	// Tracked whether or not the WebGL compositor is running: what it can draw
 	// depends on the windows it cannot, and a window that existed before
@@ -253,6 +275,10 @@ func LaunchOpts(name string, opt Options, args ...string) (*winbox.WinBox, error
 			return true
 		}
 		untrackWindow(lw)
+		// Close every pane the window still holds, not just the front one: a
+		// terminal in a background tab owns a session, and closing the window
+		// is the person saying they are done with all of it.
+		dropTabset(wb)
 		return false
 	}
 
@@ -260,8 +286,30 @@ func LaunchOpts(name string, opt Options, args ...string) (*winbox.WinBox, error
 		alive := true
 		tracked := &Window{
 			Title: title,
-			Focus: func() { win.Restore().Focus() },
+			// Show before Restore: minimizing hides the window outright (see
+			// OnMinimize below), and restoring something still hidden is a
+			// no-op that looks like a dead button.
+			Focus: func() { win.Show().Restore().Focus() },
 			Alive: func() bool { return alive },
+		}
+
+		// A MINIMIZED WINDOW IS REPRESENTED BY ITS TASK BUTTON, which is what
+		// every paneled desktop does and what winbox on its own does not:
+		// winbox parks a minimized window as a title-bar stub along the bottom
+		// of the screen. That is the right answer for a desktop with no panel,
+		// because the stub is then the only way back — and the wrong one here,
+		// where it means the same window is on screen twice, once as a button
+		// and once as a stub sitting on top of the panel.
+		//
+		// Only inside this branch, and deliberately: with no panel there is no
+		// button, and hiding on minimize would put the window somewhere the
+		// person cannot reach it.
+		prevMin := win.OnMinimize
+		win.OnMinimize = func(wb *winbox.WinBox) {
+			if prevMin != nil {
+				prevMin(wb)
+			}
+			wb.Hide()
 		}
 		panel.Track(tracked)
 		panel.SetActive(tracked) // a window opens focused

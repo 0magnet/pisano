@@ -3,7 +3,7 @@
 </h1>
 <h3>winbox-go: a full Go/WebAssembly port of WinBox.js — modern window manager for the web: lightweight, no dependencies, fully customizable, open source!</h3>
 
-<a href="https://0magnet.github.io/winbox-go/">Demo</a> &ensp;&bull;&ensp; <a href="#started">Getting Started</a> &ensp;&bull;&ensp; <a href="#options">Options</a> &ensp;&bull;&ensp; <a href="#api">API</a> &ensp;&bull;&ensp; <a href="#themes">Themes</a> &ensp;&bull;&ensp; <a href="#customize">Customize</a> &ensp;&bull;&ensp; <a href="#differences">Differences from WinBox.js</a>
+<a href="https://0magnet.github.io/winbox-go/">Demo</a> &ensp;&bull;&ensp; <a href="#started">Getting Started</a> &ensp;&bull;&ensp; <a href="#options">Options</a> &ensp;&bull;&ensp; <a href="#api">API</a> &ensp;&bull;&ensp; <a href="#themes">Themes</a> &ensp;&bull;&ensp; <a href="#customize">Customize</a> &ensp;&bull;&ensp; <a href="#jsapi">From JavaScript</a> &ensp;&bull;&ensp; <a href="#differences">Differences from WinBox.js</a>
 
 This is a complete port of [WinBox.js](https://github.com/nextapps-de/winbox) by Thomas Wilkerling to Go, targeting WebAssembly via `syscall/js`. It compiles with both the **standard Go toolchain** (`GOOS=js GOARCH=wasm`) and **TinyGo** (`-target wasm`), and ports the entire feature set: drag, 8-direction resize, minimize with split-screen taskbar stacking, maximize, browser fullscreen, modals, DOM mount/unmount, iframes, custom controls and templates, viewport limits, percentage/centered positioning, and all lifecycle callbacks.
 
@@ -15,6 +15,8 @@ If you find the underlying window manager useful, consider [supporting the origi
 ### Live Demo
 
 <a href="https://0magnet.github.io/winbox-go/">https://0magnet.github.io/winbox-go/</a> (compiled with TinyGo)
+
+![winbox-go in the browser](docs/winbox-go-demo.png "windows with drag, resize, minimize and the split-screen taskbar, drawn from Go")
 
 <a name="started"></a>
 ## Getting Started
@@ -787,7 +789,7 @@ WinBox provides built-in control classes you can pass when creating a window ins
 
 > Without the header the user isn't able to move the window frame. It may be useful for creating fixed popups.
 
-Pass in classnames when creating the window to apply behaviour:
+Pass in classnames when creating the window to apply behavior:
 ```go
 winbox.New(&winbox.Options{
     Class: []string{"no-min", "no-max", "no-full", "no-resize", "no-move"},
@@ -1001,6 +1003,74 @@ winbox.New(&winbox.Options{
 - Or provide an alternative view strategy for mobile devices, e.g. when the device is a touch device then open a classical app view. If a mouse pointer is available, then mount this view to the WinBox window. Also, you can place a switch button in your application where the user can toggle between these two modes.
 - Keep the Go runtime alive (e.g. `select {}` at the end of `main`) — the window manager is driven entirely by Go callbacks.
 
+<a name="jsapi"></a>
+## Using it from JavaScript
+
+Existing pages already say `new WinBox({...})`. The `jsapi` subpackage puts
+that constructor back on `globalThis`, backed by this implementation, so such a
+page keeps working without being rewritten:
+
+```go
+//go:build js && wasm
+
+package main
+
+import "github.com/0magnet/winbox-go/jsapi"
+
+func main() {
+    jsapi.InstallGlobal()
+    select {} // keep the Go runtime alive for callbacks
+}
+```
+
+`cmd/winbox-js` is exactly that program, if a module whose only job is to
+install the constructor is what you want:
+
+```cmd
+tinygo build -o winbox.wasm -target wasm -no-debug -opt=z ./cmd/winbox-js
+```
+
+The option keys, methods, instance properties and callbacks are the ones
+WinBox.js documents, with the loose argument forms it accepts: `width: 250`,
+`"250"`, `"250px"` and `"40%"` all work, `class` takes a string or an array,
+`minimize(false)` restores, `close()` returns `true` only when an `onclose`
+handler canceled it, and callbacks are invoked with `this` bound to the
+instance and may be reassigned at any time. The root element is exposed as
+`g`, `window` **and** `dom`, so code that identifies a window by matching a DOM
+node against any one of those aliases finds it.
+
+The Go API (`winbox.New`) is the better one to write new code against. This is
+a compatibility layer.
+
+### It exists only once the module has started
+
+This is the one thing a `<script src="winbox.js">` gave you that a wasm module
+cannot: the constructor is defined when Go's `main` runs, not when the tag is
+parsed. Page code that constructs a window before then throws
+`WinBox is not defined`.
+
+`cmd/winbox-js` resolves `globalThis.__winboxReady` when the constructor is in
+place, so a caller can wait for it instead of racing:
+
+```html
+<script src="wasm_exec.js"></script>
+<script>
+  const go = new Go();
+  WebAssembly.instantiateStreaming(fetch("winbox.wasm"), go.importObject)
+      .then(r => go.run(r.instance));
+</script>
+<script>
+  // Gate whatever opens windows on this, rather than opening one at load.
+  (globalThis.__winboxReady || Promise.resolve()).then(() => {
+      new WinBox({ title: "Ready" });
+  });
+</script>
+```
+
+A host that already polls for readiness before mounting its UI — many do — has
+the cheaper option of adding `typeof WinBox === "function"` to the condition it
+already waits on, which gates every window it will ever open in one place.
+
 <a name="differences"></a>
 ## Differences from WinBox.js
 
@@ -1048,7 +1118,7 @@ Dock several windows and each claims space inside what the earlier ones left, so
 a left dock and a bottom dock meet at a corner rather than overlapping it.
 Hiding, minimizing or closing a dock returns its strip to everyone else, and
 docks follow the viewport when the page is resized. (A *maximized* window does
-not follow a resize — that is WinBox.js's behaviour and it is kept — except
+not follow a resize — that is WinBox.js's behavior and it is kept — except
 where docks are involved, since a stale maximized window and a dock would
 otherwise overlap.)
 

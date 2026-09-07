@@ -1075,3 +1075,21 @@ func escapeHTML(s string) string {
 	r := strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;")
 	return r.Replace(s)
 }
+
+// RefreshGlyphs rebuilds the renderer's glyph cache.
+//
+// Rasterised glyphs are cached, so a change to an option that affects how one
+// is DRAWN rather than which one is drawn — Options.MirrorGlyph is the only one
+// today — is not picked up by itself: the cache still holds the glyphs as they
+// were rasterised before. Everything else that invalidates the cache does so as
+// a side effect of resizing or of the colors changing, which is why this is the
+// only place that needs saying out loud.
+//
+// A no-op on the DOM renderer, which rasterises nothing.
+func (t *Terminal) RefreshGlyphs() {
+	if r, ok := t.renderer.(*webglRenderer); ok {
+		r.refreshCharAtlas()
+		r.model.clear()
+		r.glyphs.clear()
+	}
+}
