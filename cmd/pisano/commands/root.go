@@ -7,9 +7,7 @@ import (
 	"io"
 	"os"
 	"runtime/debug"
-	"sync"
 
-	cc "github.com/0magnet/coloredcobra"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -87,35 +85,6 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) (code int
 	return 0
 }
 
-// colorOnce styles the help once. Run is re-entered for every invocation in
-// the browser build, and cc.Init rewrites the command's help templates each
-// time it is called — doing that per invocation would be work for no change.
-//
-// The fork is deliberate: coloredcobra drives its templates through
-// text/template, which needs the dynamic method dispatch TinyGo does not
-// implement, and upstream panics there. This build is published as TinyGo, so
-// the coloring has to come from the fork or `pisano --help` takes down the
-// goroutine the shell is waiting on — which is the failure the recover in Run
-// was added for.
-var colorOnce sync.Once
-
-func colorHelp() {
-	colorOnce.Do(func() {
-		cc.Init(&cc.Config{
-			RootCmd:         RootCmd,
-			Headings:        cc.HiBlue + cc.Bold,
-			Commands:        cc.HiBlue + cc.Bold,
-			CmdShortDescr:   cc.HiBlue,
-			Example:         cc.HiBlue + cc.Italic,
-			ExecName:        cc.HiBlue + cc.Bold,
-			Flags:           cc.HiBlue + cc.Bold,
-			FlagsDescr:      cc.HiBlue,
-			NoExtraNewlines: true,
-			NoBottomNewline: true,
-		})
-	})
-}
-
 // prepare makes the tree ready to run again, which it is not by default.
 //
 // The tree is built once, at init, and it keeps two things between runs. A
@@ -138,7 +107,6 @@ func colorHelp() {
 // it the first run's Host: its filesystem, its working directory, its terminal.
 // Two terminals open in a page would have written each other's files.
 func prepare(cmd *cobra.Command, ctx context.Context) {
-	colorHelp()
 	cmd.SetContext(ctx)
 	cmd.Flags().VisitAll(func(f *pflag.Flag) {
 		if !f.Changed {
