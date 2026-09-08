@@ -1,4 +1,4 @@
-// Package clihelp gives a cobra command the house help menu: the program.s
+// Package clihelp gives a cobra command the house help menu: the program's
 // name in calvin's ASCII font, the build it came from underneath, blue
 // coloring, and the two flags that print what the toolchain recorded.
 //
@@ -124,7 +124,7 @@ func BannerWith(name, text string) string {
 
 // Init gives cmd the house style: the banner above whatever Long it already
 // had, the blue coloring, the renderer, and the -b/-d flags. Call it on
-// the root command after its subcommands are attached, since the templates are
+// the root command after its subcommands are attached, since the help func is
 // inherited through the parent chain and the flags are only meaningful at the
 // root.
 //
@@ -170,8 +170,12 @@ func InitFlags(cmd *cobra.Command) {
 		return
 	}
 	var showAll, showVer bool
-	cmd.Flags().BoolVarP(&showAll, "info", "d", false, "print runtime/debug.BuildInfo")
-	cmd.Flags().BoolVarP(&showVer, "bv", "b", false, "print the main module's version")
+	// The shorthands are taken where the command already wanted them — dict
+	// spends -d on --define — and pflag panics on a duplicate rather than
+	// reporting one. The long flag is the contract and the letter a
+	// convenience, so the letter is dropped instead of the command breaking.
+	bindBool(cmd, &showAll, "info", "d", "print runtime/debug.BuildInfo")
+	bindBool(cmd, &showVer, "bv", "b", "print the main module's version")
 
 	// Wrap rather than replace: a command with its own Run keeps it, and one
 	// without still answers the flags.
@@ -196,4 +200,19 @@ func InitFlags(cmd *cobra.Command) {
 		}
 		return c.Help()
 	}
+}
+
+// bindBool registers a bool flag, giving up the shorthand rather than the flag
+// when the command has already spent that letter. pflag panics on a duplicate
+// shorthand, so asking first is the difference between a help menu and a crash
+// at startup.
+func bindBool(cmd *cobra.Command, p *bool, name, short, usage string) {
+	if cmd.Flags().Lookup(name) != nil || cmd.PersistentFlags().Lookup(name) != nil {
+		return // the command defines this itself; leave it alone
+	}
+	if short != "" && (cmd.Flags().ShorthandLookup(short) != nil ||
+		cmd.PersistentFlags().ShorthandLookup(short) != nil) {
+		short = ""
+	}
+	cmd.Flags().BoolVarP(p, name, short, false, usage)
 }

@@ -1,6 +1,6 @@
 module github.com/0magnet/pisano
 
-go 1.26
+go 1.26.0
 
 require (
 	github.com/spf13/cobra v1.10.2
@@ -9,7 +9,7 @@ require (
 
 require (
 	github.com/0magnet/bubbletea/v2 v2.0.9-0.20260816230205-5aaf8ac0d36c
-	github.com/0magnet/calvin v0.0.0-20260907205746-bc8391f278ed
+	github.com/0magnet/calvin v0.0.0-20260908144219-7385103470d9
 )
 
 require (
@@ -34,6 +34,6 @@ require (
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/xo/terminfo v1.0.0 // indirect
-	golang.org/x/sync v0.22.0 // indirect
-	golang.org/x/sys v0.47.0 // indirect
+	golang.org/x/sync v0.23.0 // indirect
+	golang.org/x/sys v0.48.0 // indirect
 )
