@@ -9,7 +9,7 @@ require (
 
 require (
 	github.com/0magnet/bubbletea/v2 v2.0.9-0.20260816230205-5aaf8ac0d36c
-	github.com/0magnet/calvin v0.0.0-20260908144219-7385103470d9
+	github.com/0magnet/calvin v0.0.0-20260908180241-0893f4bff56a
 )
 
 require (
