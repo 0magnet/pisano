@@ -1,0 +1,75 @@
+name: pages
+
+# Build the browser demo and commit it to docs/, which is what GitHub Pages
+# serves (the repo is configured main:/docs, legacy build — there is no Pages
+# action in the chain).
+#
+# It existed only as web/build.sh run by hand before this, which meant the wasm
+# on the site was whatever the last machine to run it produced. A dependency fix
+# reached the demo only if someone remembered to rebuild, and one that shipped a
+# real bug — a WebGL canvas sized 41px taller than the terminal it sat on —
+# stayed live for weeks across five demos for exactly that reason.
+on:
+  push:
+    branches: [main]
+    # Only when something that changes the binary changes. docs/ is excluded so
+    # this cannot answer its own commit.
+    paths:
+      - '**.go'
+      - 'go.mod'
+      - 'go.sum'
+      - 'web/**'
+      - 'scripts/tinygo-toolchain.sh'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+concurrency:
+  # A second push while this is running would race to commit docs/. Newer wins;
+  # the older run has nothing to say that the newer one does not.
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      # TinyGo trails Go: 0.42 declares support through Go 1.27 but does not
+      # build against it — Go 1.27's internal/runtime/maps reaches for
+      # abi.MapType and abi.MapGroupSlots, which TinyGo's own reduced
+      # internal/abi does not define, and TinyGo does not override
+      # internal/runtime/maps. Pinning the Go version is what keeps this
+      # reproducible rather than depending on whatever the runner ships.
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.5'
+          cache: false
+
+      - uses: acifani/setup-tinygo@v3
+        with:
+          tinygo-version: '0.42.0'
+
+      - name: build the demo into docs/
+        run: sh web/build.sh
+
+      - name: commit docs/ if it changed
+        run: |
+          set -eu
+          if git diff --quiet -- docs; then
+            echo "docs/ unchanged; nothing to publish"
+            exit 0
+          fi
+          # The committer is the workflow, not a person: a bot identity makes it
+          # obvious in the log which commits are builds rather than edits.
+          git config user.name  'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs
+          # [skip ci] because this commit is a build product. Without it the
+          # push would start the whole workflow set again for a tree whose
+          # source did not change.
+          git commit -m 'docs: rebuild the browser demo [skip ci]'
+          git push
