@@ -494,3 +494,46 @@ func TestKeyNamesAreBound(t *testing.T) {
 		}
 	}
 }
+
+// --step is what lets a run skip the even moduli, whose turtle paths close on
+// themselves and look much alike. From an odd start with a step of 2 the run
+// must stay odd for as long as it goes.
+func TestCycleStepSkipsByTheGivenAmount(t *testing.T) {
+	every := 10
+	m := frames(t, Options{Mod: 9, Speed: 2, Step: 2, Cycle: time.Duration(every) * frame}, 80, 24, 0)
+	if m.cycleStep != 2 {
+		t.Fatalf("cycleStep is %d, want 2", m.cycleStep)
+	}
+	for i, want := range []int{11, 13, 15, 17} {
+		m = m.tick(every)
+		if m.mod != want {
+			t.Fatalf("dwell %d: modulus is %d, want %d", i+1, m.mod, want)
+		}
+		if m.mod%2 == 0 {
+			t.Fatalf("dwell %d landed on an even modulus (%d) — the whole point was to skip them", i+1, m.mod)
+		}
+	}
+}
+
+// An unset Step must behave exactly as before, and a zero or negative one must
+// not freeze the viewer on one figure while it claims to be cycling.
+func TestCycleStepDefaultsAndFloors(t *testing.T) {
+	every := 10
+	for _, tc := range []struct {
+		name string
+		step int
+	}{
+		{"unset", 0},
+		{"zero", 0},
+		{"negative", -5},
+	} {
+		m := frames(t, Options{Mod: 5, Speed: 2, Step: tc.step, Cycle: time.Duration(every) * frame}, 80, 24, 0)
+		if m.cycleStep != 1 {
+			t.Errorf("%s: cycleStep is %d, want 1", tc.name, m.cycleStep)
+		}
+		m = m.tick(every)
+		if m.mod != 6 {
+			t.Errorf("%s: modulus is %d after one dwell, want 6", tc.name, m.mod)
+		}
+	}
+}
