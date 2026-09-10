@@ -37,32 +37,13 @@ func Frame(across, down, corner Figure, lines []string, pad int) (Grid, error) {
 		return nil, fmt.Errorf("border: a frame needs two figures that travel, got %+d,%+d and %+d,%+d",
 			across.DX, across.DY, down.DX, down.DY)
 	}
-	cols := max(1, int(math.Ceil(float64(needW)/stepA)))
-	rows := max(1, int(math.Ceil(float64(needH)/stepD)))
-	const tries = 40
-	for range tries {
-		l, err := Compose(Spec{Across: across, Down: down, Corner: corner,
-			Cols: cols, Rows: rows})
-		if err != nil {
-			return nil, err
-		}
-		g := l.Grid()
-		in := g.Inside()
-		w, h := in.X1-in.X0, in.Y1-in.Y0
-		if w >= needW && h >= needH {
-			y := in.Y0 + (h-len(lines))/2
-			g.Overlay(in.X0+(w-needW)/2+pad, y, lines)
-			return g, nil
-		}
-		if w < needW {
-			cols++
-		}
-		if h < needH {
-			rows++
-		}
+	_, g, in, ok := FitAround(Spec{Across: across, Down: down, Corner: corner}, needW, needH)
+	if !ok {
+		return nil, fmt.Errorf("border: no frame holds %dx%d; the corners may be bigger than the frame would be", needW, needH)
 	}
-	return nil, fmt.Errorf("border: %d copies each way still will not hold %dx%d; the corners may be bigger than the frame",
-		cols, needW, needH)
+	w, h := in.X1-in.X0, in.Y1-in.Y0
+	g.Overlay(in.X0+(w-needW)/2+pad, in.Y0+(h-len(lines))/2, lines)
+	return g, nil
 }
 
 // FitBox is the largest frame that fits inside a box of the given size in
@@ -145,4 +126,54 @@ func FitBox(across, down, corner Figure, cols, rows int) (Layout, Grid, bool) {
 	// needs it: a tint is per COPY of a run, and only the layout knows which
 	// copy a cell came from.
 	return l, l.Grid(), true
+}
+
+// FitAround is the smallest frame whose CLEAR MIDDLE holds a box of the given
+// size in characters, with the layout that made it and where that middle is.
+//
+// The difference from FitBox is the whole point. FitBox fits the frame inside
+// the box, which puts the border on top of whatever is there; this fits the box
+// inside the frame, which puts the border around it. A caller with a table to
+// surround wants this one, and lines the middle up with the table rather than
+// lining the frame up with it.
+//
+// The template's Cols and Rows are ignored — they are what this works out — but
+// everything else in it is honored, so a caller can ask for a detached frame or
+// the other corner bias and get one.
+//
+// Grown rather than solved, unlike FitBox, because the middle cannot be
+// predicted from the counts: the runs are woven so their inner edge is ragged,
+// the corners reach further in than the runs, and how far each run is held off
+// its corners depends on where the crossing of its wave falls. The first guess
+// comes from the travels and is usually within a copy, so this is a nudge and
+// not a search.
+func FitAround(template Spec, cols, rows int) (Layout, Grid, Rect, bool) {
+	stepA := math.Hypot(float64(template.Across.DX), float64(template.Across.DY))
+	stepD := math.Hypot(float64(template.Down.DX), float64(template.Down.DY))
+	if stepA == 0 || stepD == 0 {
+		return Layout{}, nil, Rect{}, false
+	}
+	s := template
+	s.Cols = max(1, int(math.Ceil(float64(cols)/stepA)))
+	s.Rows = max(1, int(math.Ceil(float64(rows)/stepD)))
+	const tries = 40
+	for range tries {
+		l, err := Compose(s)
+		if err != nil {
+			return Layout{}, nil, Rect{}, false
+		}
+		g := l.Grid()
+		in := g.Inside()
+		w, h := in.X1-in.X0, in.Y1-in.Y0
+		if w >= cols && h >= rows {
+			return l, g, in, true
+		}
+		if w < cols {
+			s.Cols++
+		}
+		if h < rows {
+			s.Rows++
+		}
+	}
+	return Layout{}, nil, Rect{}, false
 }

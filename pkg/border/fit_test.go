@@ -84,3 +84,41 @@ func TestFitBoxStaysInsideItsBox(t *testing.T) {
 		t.Error("a 6x6 box should not fit a frame with 8x8 corners")
 	}
 }
+
+// FitAround must put the box INSIDE the frame, which is the opposite of what
+// FitBox does, and the clear middle it reports must really be clear.
+func TestFitAroundSurroundsTheBox(t *testing.T) {
+	d, ok := OfPasses(13, 1)
+	if !ok {
+		t.Fatal("no figure for modulus 13")
+	}
+	c, ok := OfPasses(31, 4)
+	if !ok {
+		t.Fatal("no figure for modulus 31 at four passes")
+	}
+	tmpl := Spec{Across: d.RotateCW(), Down: d, Corner: c, Detached: true}
+	for _, box := range [][2]int{{40, 8}, {100, 20}, {113, 66}} {
+		l, g, in, ok := FitAround(tmpl, box[0], box[1])
+		if !ok {
+			t.Fatalf("no frame goes around %dx%d", box[0], box[1])
+		}
+		if w, h := in.X1-in.X0, in.Y1-in.Y0; w < box[0] || h < box[1] {
+			t.Errorf("box %dx%d got a middle of only %dx%d", box[0], box[1], w, h)
+		}
+		if g.W() <= box[0] || g.H() <= box[1] {
+			t.Errorf("box %dx%d got a frame %dx%d, which does not go around it",
+				box[0], box[1], g.W(), g.H())
+		}
+		for y := in.Y0; y < in.Y1; y++ {
+			for x := in.X0; x < in.X1; x++ {
+				if a, ok := Arms(g[y][x]); ok && a != 0 {
+					t.Fatalf("box %dx%d: mark at %d,%d inside the clear middle", box[0], box[1], x, y)
+				}
+			}
+		}
+		// Detached asked for, detached delivered.
+		if _, joins := l.GridJoins(); joins != 0 {
+			t.Errorf("box %dx%d: %d connectors drawn for a detached frame", box[0], box[1], joins)
+		}
+	}
+}
