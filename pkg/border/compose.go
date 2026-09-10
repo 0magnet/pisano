@@ -615,100 +615,134 @@ func smallestPiece(ps []Placement) int {
 // Only for a run traveling along a grid axis. On a diagonal the period is not
 // a whole number of columns and the swing is not measured in rows, and a frame
 // with diagonal runs is not one a terminal can print anyway.
-func waveSign(f Figure) []int {
-	horizontal := f.DY == 0 && f.DX != 0
-	vertical := f.DX == 0 && f.DY != 0
-	if !horizontal && !vertical {
-		return nil
-	}
-	t := abs(f.DX)
-	if vertical {
-		t = abs(f.DY)
-	}
+// leadOffset says where a run's LEADING EDGE ends up sitting relative to its
+// own center line, for a cut at the given phase, once the run has been tidied
+// the way the composition tidies it.
+//
+// The leading edge is the cells nearest the corner — the ones that meet it —
+// and the whole question is which part of the run those turn out to be. A run
+// figure is a line that wanders, swinging once to each side over its period, so
+// its edge can come out on a peak, in a trough, or on the crossing between
+// them. Only the crossing puts the middle of the run against the corner.
+//
+// Measured rather than reasoned about, and the difference is not small. Reading
+// the raw figure says which way the stripe leans column by column, but the edge
+// that survives is the edge AFTER trimming, and trimming takes the loose ends
+// off precisely at the cut. On the 13/31 frame the raw cut sat half a cell
+// above the center line and the trimmed one a full cell above it — the run met
+// its corners near a peak while every column-by-column reading said crossing.
+//
+// A model strip rather than the real frame, because the real frame cannot be
+// built until this is decided.
+func leadOffset(f Figure, phase int, low bool) (float64, bool) {
+	t := phaseOf(f)
 	if t == 0 {
-		return nil
+		return 0, false
 	}
-	// Several periods of the stripe, read in the MIDDLE. A figure is wider than
-	// it travels — modulus 13 turned once is six cells across a travel of four
-	// — so consecutive copies overlap and every column carries ink from two of
-	// them. Reading one copy on its own gets the wave wrong at both edges,
-	// which is exactly where the answer is wanted.
-	const copies = 5
-	span := copies*t + max(f.W(), f.H())
-	lo := make([]int, span)
-	hi := make([]int, span)
-	for i := range lo {
-		lo[i], hi[i] = 1<<30, -(1 << 30)
-	}
+	u := unit(f.DX, f.DY)
+	ux, uy := int(u[0]), int(u[1])
+	nx, ny := -uy, ux
+	const copies = 9
+	lx0, ly0, lx1, ly1 := 0, 0, 0, 0
 	for k := range copies {
-		for r := range f.Grid {
-			for c := range f.Grid[r] {
-				if a, ok := Arms(f.Grid[r][c]); !ok || a == 0 {
-					continue
-				}
-				along, across := c, r
-				if vertical {
-					along, across = r, c
-				}
-				i := k*t + along
-				lo[i], hi[i] = min(lo[i], across), max(hi[i], across)
+		lx0, lx1 = min(lx0, k*f.DX), max(lx1, k*f.DX+f.W()-1)
+		ly0, ly1 = min(ly0, k*f.DY), max(ly1, k*f.DY+f.H()-1)
+	}
+	offX, offY := -lx0, -ly0
+	g := BlankGrid(lx1-lx0+1, ly1-ly0+1)
+	for k := range copies {
+		g.Stamp(f.Grid, k*f.DX+offX, k*f.DY+offY)
+	}
+	along := func(x, y int) int { return (x-offX)*ux + (y-offY)*uy }
+	across := func(x, y int) int { return (x-offX)*nx + (y-offY)*ny }
+
+	// Cut in the middle of the strip, so neither end of the model shows in the
+	// answer, and keep a few periods beyond so the far cut cannot either.
+	mid := along(offX+(copies/2)*f.DX, offY+(copies/2)*f.DY)
+	a0 := mid + ((phase-mid)%t+t)%t
+	lo, hi := a0, a0+3*t
+	if !low {
+		lo, hi = a0-3*t, a0
+	}
+	for y := range g {
+		for x := range g[y] {
+			if a := along(x, y); a < lo || a > hi {
+				g[y][x] = Blank
 			}
+		}
+	}
+	g.Trim()
+	g.Smooth()
+
+	edge, seen := 0, false
+	for y := range g {
+		for x := range g[y] {
+			if arm, ok := Arms(g[y][x]); !ok || arm == 0 {
+				continue
+			}
+			a := along(x, y)
+			if !seen || (low && a < edge) || (!low && a > edge) {
+				edge, seen = a, true
+			}
+		}
+	}
+	if !seen {
+		return 0, false
+	}
+	cLo, cHi := 1<<30, -(1 << 30)
+	for y := range g {
+		for x := range g[y] {
+			if arm, ok := Arms(g[y][x]); !ok || arm == 0 || along(x, y) != edge {
+				continue
+			}
+			cLo, cHi = min(cLo, across(x, y)), max(cHi, across(x, y))
 		}
 	}
 	ax, ay := f.Axis()
-	axis := ay
-	if vertical {
-		axis = ax
-	}
-	// The middle period, where every column has its full complement of copies.
-	base := (copies / 2) * t
-	sign := make([]int, t)
-	for step := range t {
-		i := base + step
-		if hi[i] < lo[i] {
-			continue
-		}
-		switch off := float64(lo[i]+hi[i])/2 - axis; {
-		case off < -0.25:
-			sign[step] = -1
-		case off > 0.25:
-			sign[step] = 1
-		}
-	}
-	return sign
+	axis := ax*float64(nx) + ay*float64(ny)
+	return float64(cLo+cHi)/2 - axis, true
 }
 
 // crossings is where along its period a run should be cut at each end so that
-// both cuts land on a zero crossing of that wave, and on the SAME swing.
+// the part meeting the corner is the crossing rather than a peak or a trough.
 //
-// Same swing is the half that stops the fix from moving the fault rather than
-// curing it. The two cuts travel in opposite directions through the period —
-// holding both ends back by one step moves the near cut one way through the
-// wave and the far cut the other — so a single offset that puts a whole trough
-// against the left corner puts half a peak against the right one. They need
-// choosing separately, and matched.
+// Both ends are chosen together, out of every combination, because they cannot
+// be chosen with one number. They travel through the period in opposite
+// directions — hold both ends back by a step and the near cut moves one way
+// through the wave while the far cut moves the other — so a single offset that
+// puts the crossing against the left corner puts a peak against the right one.
+// That is moving the fault rather than curing it.
+//
+// The tie-break asks for the two ends to come out ALIKE. Where several cuts sit
+// equally near the center line, the frame reads better for having its two ends
+// match than for either being a hair closer on its own.
 func crossings(f Figure) (low, high int, ok bool) {
-	sign := waveSign(f)
-	t := len(sign)
+	t := phaseOf(f)
 	if t == 0 {
 		return 0, 0, false
 	}
-	at := func(i int) int { return sign[((i%t)+t)%t] }
-	for l := range t {
-		// A crossing at the near end: the step before the cut is on the other
-		// side of the line from the first step kept.
-		if at(l-1) == at(l) || at(l) == 0 {
-			continue
-		}
-		for h := range t {
-			// And at the far end: the last step kept, with the next one over.
-			if at(h+1) == at(h) || at(h) != at(l) {
-				continue
-			}
-			return l, h, true
+	lows := make([]float64, t)
+	highs := make([]float64, t)
+	for p := range t {
+		var okL, okH bool
+		lows[p], okL = leadOffset(f, p, true)
+		highs[p], okH = leadOffset(f, p, false)
+		if !okL || !okH {
+			return 0, 0, false
 		}
 	}
-	return 0, 0, false
+	best := math.MaxFloat64
+	for l := range t {
+		for h := range t {
+			// Near the middle at both ends first, then alike.
+			score := math.Abs(lows[l]) + math.Abs(highs[h]) +
+				0.5*math.Abs(lows[l]+highs[h])
+			if score < best-1e-9 {
+				best, low, high, ok = score, l, h, true
+			}
+		}
+	}
+	return low, high, ok
 }
 
 // phaseOf is a run's period in cells, or zero if it has none worth counting.

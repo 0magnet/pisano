@@ -1,6 +1,7 @@
 package border
 
 import (
+	"math"
 	"strings"
 	"testing"
 )
@@ -276,13 +277,14 @@ func TestInsetMovesTheCutByCells(t *testing.T) {
 	}
 }
 
-// Both ends of every run must land on a zero crossing of the run's own wave.
+// The part of a run that meets a corner has to be the crossing of its wave, not
+// a peak or a trough — the middle of the stripe against the corner, not its top
+// or bottom edge.
 //
-// A run figure is a line that wanders, swinging once to each side over its
-// period, so it has a peak, a trough, and a crossing between them. Cut at a
-// peak or a trough and half an ornament hangs at the corner; cut at a crossing
-// and a whole one faces it.
-func TestRunsAreCutAtZeroCrossings(t *testing.T) {
+// Measured after trimming, because that is the edge that survives, and the two
+// differ: reading the figure column by column said crossing while the trimmed
+// edge sat a whole cell above the center line.
+func TestRunsMeetCornersAtTheCrossing(t *testing.T) {
 	d, ok := OfPasses(13, 1)
 	if !ok {
 		t.Fatal("no figure for modulus 13")
@@ -293,34 +295,28 @@ func TestRunsAreCutAtZeroCrossings(t *testing.T) {
 	}
 	across := d.RotateCW()
 	for _, f := range []Figure{across, d} {
-		sign := waveSign(f)
-		if len(sign) == 0 {
-			t.Fatalf("modulus %d traveling %+d,%+d has no readable wave",
-				f.Mod, f.DX, f.DY)
-		}
 		lo, hi, ok := crossings(f)
 		if !ok {
-			t.Fatalf("modulus %d: no zero crossing found in wave %v", f.Mod, sign)
+			t.Fatalf("modulus %d: no cut found", f.Mod)
 		}
-		n := len(sign)
-		at := func(i int) int { return sign[((i%n)+n)%n] }
-		if at(lo-1) == at(lo) {
-			t.Errorf("modulus %d: the near cut at step %d is not a crossing, wave %v",
-				f.Mod, lo, sign)
+		offLo, _ := leadOffset(f, lo, true)
+		offHi, _ := leadOffset(f, hi, false)
+		// Half a cell is as close as an even-sided stripe can come to a center
+		// line that falls between rows; a whole cell is a peak.
+		if math.Abs(offLo) > 0.5 {
+			t.Errorf("modulus %d: near end meets the corner %+.1f off its center line",
+				f.Mod, offLo)
 		}
-		if at(hi+1) == at(hi) {
-			t.Errorf("modulus %d: the far cut at step %d is not a crossing, wave %v",
-				f.Mod, hi, sign)
+		if math.Abs(offHi) > 0.5 {
+			t.Errorf("modulus %d: far end meets the corner %+.1f off its center line",
+				f.Mod, offHi)
 		}
-		// And on the same swing, or the fix moves the fault instead of curing
-		// it: a whole trough against one corner and half a peak against the
-		// other.
-		if at(lo) != at(hi) {
-			t.Errorf("modulus %d: the two cuts are on opposite swings, %d and %d in %v",
-				f.Mod, at(lo), at(hi), sign)
+		// And the two ends alike, or the fault has only moved.
+		if math.Abs(offLo+offHi) > 1e-9 && math.Abs(offLo-offHi) > 1e-9 {
+			t.Errorf("modulus %d: the two ends meet their corners differently, %+.1f and %+.1f",
+				f.Mod, offLo, offHi)
 		}
 	}
-	// And the frame still composes clean.
 	l, err := Compose(Spec{Across: across, Down: d, Corner: c, Cols: 12, Rows: 5})
 	if err != nil {
 		t.Fatal(err)
