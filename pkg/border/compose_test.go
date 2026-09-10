@@ -1,6 +1,9 @@
 package border
 
-import "testing"
+import (
+	"math"
+	"testing"
+)
 
 func mustFig(t *testing.T, m int) Figure {
 	t.Helper()
@@ -90,5 +93,43 @@ func TestUprightLayoutDrawsOnePiece(t *testing.T) {
 	}
 	if n := l.Grid().Components(); n != 1 {
 		t.Errorf("threaded border is %d pieces, want 1", n)
+	}
+}
+
+// FitSpec is what makes a border dynamic: counts derived from a measured box
+// rather than asked for. The test is that the composed border really does come
+// out close to the box it was fitted to.
+func TestFitSpecFillsTheBox(t *testing.T) {
+	a := mustFig(t, 283)
+	cat := Catalog(3, 400)
+	ps := SquarePartners(a, cat, 1)
+	if len(ps) == 0 {
+		t.Skip("no square partner")
+	}
+	d := ps[0]
+	c := mustFig(t, 755)
+	for _, box := range [][2]float64{{1200, 1500}, {1200, 263}, {600, 600}, {320, 900}} {
+		const cell = 2.5
+		s := FitSpec(a, d, c, box[0], box[1], cell)
+		l, err := Compose(s)
+		if err != nil {
+			t.Fatal(err)
+		}
+		g := l.Grid()
+		if n := g.Components(); n != 1 {
+			t.Errorf("box %vx%v: %d components, want 1", box[0], box[1], n)
+		}
+		x0, y0, x1, y1 := l.inkBox(g)
+		gotW, gotH := (x1-x0)*cell, (y1-y0)*cell
+		// Within a copy's length either way: the counts are whole copies, so a
+		// border cannot land on an arbitrary size exactly.
+		tolW := math.Hypot(float64(a.DX), float64(a.DY)) * cell
+		tolH := math.Hypot(float64(d.DX), float64(d.DY)) * cell
+		if math.Abs(gotW-box[0]) > tolW*1.5 || math.Abs(gotH-box[1]) > tolH*1.5 {
+			t.Errorf("box %.0fx%.0f -> %.0fx%.0f (cols %d rows %d), further off than one copy",
+				box[0], box[1], gotW, gotH, s.Cols, s.Rows)
+			continue
+		}
+		t.Logf("box %4.0fx%-4.0f -> %4.0fx%-4.0f  cols %2d rows %2d", box[0], box[1], gotW, gotH, s.Cols, s.Rows)
 	}
 }

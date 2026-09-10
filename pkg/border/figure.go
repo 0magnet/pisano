@@ -10,11 +10,17 @@ import (
 // Figure is one turtle figure, with the properties a border needs.
 type Figure struct {
 	Mod    int   // the modulus that drew it (the smallest, when several do)
+	Passes int   // how many times round the period; the figure changes with it
 	Also   []int // the other moduli producing the same figure, up to orientation
 	Grid   Grid  // the drawing
 	DX, DY int   // net travel of the path, in cells: where it ends up
 	Closed bool  // the path returns to where it started
-	Points int   // path length, a fair measure of how busy it looks
+	// StartX, StartY are where the path BEGINS, in cells from the grid origin —
+	// which is where a run's line enters the figure, and so the point another
+	// piece has to be lined up with. Placing by the grid corner instead makes
+	// runs meet a corner off to one side of it.
+	StartX, StartY int
+	Points         int // path length, a fair measure of how busy it looks
 }
 
 // W and H in cells.
@@ -49,16 +55,29 @@ func abs(v int) int {
 	return v
 }
 
-// Of builds the figure for one modulus of the Fibonacci sequence.
+// Of builds the figure for one modulus, walking the period twice.
+func Of(m int) (Figure, bool) { return OfPasses(m, 2) }
+
+// OfPasses builds the figure for one modulus, walking the period `passes` times.
+//
+// The pass count is not a detail: it is half the design. The same modulus draws
+// a different figure at each count, and whether the path CLOSES depends on it —
+// modulus 1019 is an open 50x45 wanderer at two passes and a closed, perfectly
+// half-turn-symmetric 60x60 at four. Fixing it at two, as this package first
+// did, hides most of what the sequence can draw, and hides the large symmetric
+// figures entirely.
 //
 // ok is false when the sequence has no bounded period within the term limit, or
 // the path is too short to draw — neither makes a usable figure.
-func Of(m int) (Figure, bool) {
+func OfPasses(m, passes int) (Figure, bool) {
+	if passes < 1 {
+		passes = 1
+	}
 	p := pisano.Compute(pisano.Fibonacci(), m, termLimit)
 	if !p.Bounded {
 		return Figure{}, false
 	}
-	pts, _ := pisano.PathOf(p, 2)
+	pts, _ := pisano.PathOf(p, passes)
 	if len(pts) < 2 {
 		return Figure{}, false
 	}
@@ -88,10 +107,13 @@ func Of(m int) (Figure, bool) {
 	first, last := pts[0], pts[len(pts)-1]
 	return Figure{
 		Mod:    m,
+		Passes: passes,
 		Grid:   g,
 		DX:     last.X - first.X,
 		DY:     last.Y - first.Y,
 		Closed: first.X == last.X && first.Y == last.Y,
+		StartX: first.X - minX,
+		StartY: first.Y - minY,
 		Points: len(pts),
 	}, true
 }
@@ -108,20 +130,33 @@ const termLimit = 200000
 // ones draw the same handful of figures over and over — one shape recurs at
 // more than two hundred of them — so a list that did not fold orientations
 // together would be mostly repeats.
-func Catalog(lo, hi int) []Figure {
+func Catalog(lo, hi int) []Figure { return CatalogPasses(lo, hi, DefaultPasses) }
+
+// DefaultPasses is the set of pass counts a catalog walks when none is given.
+//
+// Four is in it for a reason: several of the largest symmetric figures only
+// exist there. Modulus 1399 at four passes is a 96x96 with four-fold rotational
+// symmetry, and at two passes it is nothing of the sort — a search fixed at two
+// concludes, wrongly, that no closed figure above 6x6 has more than a half turn.
+var DefaultPasses = []int{1, 2, 3, 4, 6}
+
+// CatalogPasses is Catalog over the given pass counts.
+func CatalogPasses(lo, hi int, passes []int) []Figure {
 	seen := map[string]*Figure{}
 	for m := lo; m <= hi; m++ {
-		f, ok := Of(m)
-		if !ok {
-			continue
+		for _, ps := range passes {
+			f, ok := OfPasses(m, ps)
+			if !ok {
+				continue
+			}
+			k := f.Grid.Canonical()
+			if prev, dup := seen[k]; dup {
+				prev.Also = append(prev.Also, m)
+				continue
+			}
+			cp := f
+			seen[k] = &cp
 		}
-		k := f.Grid.Canonical()
-		if prev, dup := seen[k]; dup {
-			prev.Also = append(prev.Also, m)
-			continue
-		}
-		cp := f
-		seen[k] = &cp
 	}
 	out := make([]Figure, 0, len(seen))
 	for _, f := range seen {
@@ -208,4 +243,49 @@ func SquarePartners(across Figure, cat []Figure, tol float64) []Figure {
 		return out[i].Mod < out[j].Mod
 	})
 	return out
+}
+
+// Extent is the figure's size along its longest diagonal, in cells — what it
+// occupies once turned, which is the fair way to compare two figures that will
+// be turned by the same angle.
+func (f Figure) Extent() float64 {
+	return math.Hypot(float64(f.W()), float64(f.H()))
+}
+
+// CornerFor picks a corner figure for a border whose runs are these.
+//
+// Closed, so it has no loose ends of its own where a run arrives. At least
+// atLeast times the extent of the widest run, or the runs swallow it and it
+// stops reading as the place they end. And as symmetric as can be had at that
+// size — a corner is seen four times, once per corner, each time turned or
+// mirrored, so a symmetric figure makes the frame read as one design instead of
+// four rotations of a motif.
+//
+// Size and symmetry pull against each other, and hard. Of the closed figures
+// under modulus 6000 there are exactly THREE with the full symmetry of the
+// square, and they are 3x3, 4x4 and 6x6 — the most symmetric corner available
+// is also nearly the smallest. Two-fold symmetry, a half turn, is where the big
+// figures are: 321 of them, up to 160x188. So this takes the most symmetric
+// figure that meets the size, rather than the most symmetric outright, and a
+// caller asking for a large corner is choosing the half turn whether or not it
+// knows it.
+func CornerFor(across, down Figure, cat []Figure, atLeast float64) (Figure, bool) {
+	need := math.Max(across.Extent(), down.Extent()) * atLeast
+	var best Figure
+	bestSym := -1
+	for _, f := range cat {
+		if !f.Closed || f.Extent() < need {
+			continue
+		}
+		s := f.Grid.Symmetry()
+		switch {
+		case s > bestSym:
+			best, bestSym = f, s
+		case s == bestSym && f.Extent() < best.Extent():
+			// Among equally symmetric, the smallest that still qualifies: a
+			// corner should terminate the runs, not overwhelm them.
+			best = f
+		}
+	}
+	return best, bestSym >= 0
 }

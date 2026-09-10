@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"sort"
 	"strings"
@@ -13,14 +14,15 @@ import (
 
 var borderCmd = func() *cobra.Command {
 	var (
-		across, down, corner int
-		cols, rows           int
-		out                  string
-		fitW, fitH           float64
-		font                 float64
-		list                 string
-		maxMod               int
-		limit                int
+		across, down, corner    int
+		acrossP, downP, cornerP int
+		cols, rows              int
+		out                     string
+		fitW, fitH              float64
+		font                    float64
+		list                    string
+		maxMod                  int
+		limit                   int
 	)
 	cmd := &cobra.Command{
 		Use:   "border",
@@ -53,7 +55,10 @@ alone repeat one drawing hundreds of times.`,
 	}
 	cmd.Flags().IntVar(&across, "across", 9, "modulus for the top and bottom runs")
 	cmd.Flags().IntVar(&down, "down", 0, "modulus for the side runs; 0 picks one square to --across")
-	cmd.Flags().IntVar(&corner, "corner", 37, "modulus for the corners; a closed figure works best")
+	cmd.Flags().IntVar(&acrossP, "across-passes", 2, "times round the period for the across figure; the figure changes with it")
+	cmd.Flags().IntVar(&downP, "down-passes", 2, "times round the period for the down figure")
+	cmd.Flags().IntVar(&cornerP, "corner-passes", 2, "times round the period for the corner figure")
+	cmd.Flags().IntVar(&corner, "corner", 0, "modulus for the corners; 0 picks a closed figure big enough for the runs")
 	cmd.Flags().IntVar(&cols, "cols", 8, "copies of the across figure between the corners")
 	cmd.Flags().IntVar(&rows, "rows", 3, "copies of the down figure between the corners")
 	cmd.Flags().StringVarP(&out, "out", "o", "", "write HTML here (default: stdout, as text when the border is upright)")
@@ -61,6 +66,9 @@ alone repeat one drawing hundreds of times.`,
 	cmd.Flags().StringVar(&list, "list", "", "print the catalog instead: all, closed, travel, diagonal")
 	cmd.Flags().IntVar(&maxMod, "max-mod", 3000, "highest modulus to consider when listing")
 	cmd.Flags().IntVar(&limit, "limit", 60, "how many figures --list prints")
+	var cornerScale float64
+	cmd.Flags().Float64Var(&cornerScale, "corner-scale", 3,
+		"how many times the widest run the corner must be; 10 is an order of magnitude, but only small runs leave room for it")
 	var fit string
 	cmd.Flags().StringVar(&fit, "fit", "900x400", "box the border is scaled to fit, WxH in px")
 
@@ -71,14 +79,14 @@ alone repeat one drawing hundreds of times.`,
 		if list != "" {
 			return printCatalog(cc.OutOrStdout(), list, maxMod, limit)
 		}
-		pick := func(m int, what string) (border.Figure, error) {
-			f, ok := border.Of(m)
+		pick := func(m, passes int, what string) (border.Figure, error) {
+			f, ok := border.OfPasses(m, passes)
 			if !ok {
-				return f, fmt.Errorf("no %s figure for modulus %d", what, m)
+				return f, fmt.Errorf("no %s figure for modulus %d at %d passes", what, m, passes)
 			}
 			return f, nil
 		}
-		a, err := pick(across, "across")
+		a, err := pick(across, acrossP, "across")
 		if err != nil {
 			return err
 		}
@@ -97,19 +105,37 @@ alone repeat one drawing hundreds of times.`,
 				d.Mod, d.W(), d.H(), d.DX, d.DY, across)
 		} else {
 			var err error
-			d, err = pick(down, "down")
+			d, err = pick(down, downP, "down")
 			if err != nil {
 				return err
 			}
 		}
-		c, err := pick(corner, "corner")
-		if err != nil {
-			return err
-		}
-		if !c.Closed {
-			fmt.Fprintf(cc.ErrOrStderr(), //nolint:errcheck // a note, not output //nolint:errcheck // a note, not output
-				"note: mod %d is an open figure, so the corners will have loose ends; --list closed shows the closed ones\n",
-				corner)
+		var c border.Figure
+		if corner == 0 {
+			// A corner must be at least as big as the widest run, or the runs
+			// swallow it and it stops reading as the place they end.
+			var ok bool
+			c, ok = border.CornerFor(a, d, border.Catalog(3, maxMod), cornerScale)
+			if !ok {
+				return fmt.Errorf("no closed figure below modulus %d is big enough to corner these runs; raise --max-mod", maxMod)
+			}
+			fmt.Fprintf(cc.ErrOrStderr(), //nolint:errcheck // a note, not output
+				"picked mod %d for the corners: %dx%d, %d points\n", c.Mod, c.W(), c.H(), c.Points)
+		} else {
+			var err error
+			c, err = pick(corner, cornerP, "corner")
+			if err != nil {
+				return err
+			}
+			if !c.Closed {
+				fmt.Fprintf(cc.ErrOrStderr(), //nolint:errcheck // a note, not output
+					"note: mod %d is an open figure, so the corners will have loose ends\n", corner)
+			}
+			if big := math.Max(a.Extent(), d.Extent()); c.Extent() < big {
+				fmt.Fprintf(cc.ErrOrStderr(), //nolint:errcheck // a note, not output
+					"note: the corner (extent %.0f) is smaller than the widest run (%.0f), so the runs will swallow it\n",
+					c.Extent(), big)
+			}
 		}
 		l, err := border.Compose(border.Spec{Across: a, Down: d, Corner: c, Cols: cols, Rows: rows})
 		if err != nil {

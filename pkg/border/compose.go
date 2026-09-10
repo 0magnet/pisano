@@ -78,11 +78,20 @@ func Compose(s Spec) (Layout, error) {
 	ax, ay := s.Across.DX, s.Across.DY
 	dx, dy := s.Down.DX, s.Down.DY
 
-	// Corners at the four lattice points that bound the runs.
-	add(s.Corner.Grid, 0, 0, RoleCorner)
-	add(s.Corner.Grid, s.Cols*ax, s.Cols*ay, RoleCorner)
-	add(s.Corner.Grid, s.Rows*dx, s.Rows*dy, RoleCorner)
-	add(s.Corner.Grid, s.Cols*ax+s.Rows*dx, s.Cols*ay+s.Rows*dy, RoleCorner)
+	// Corners at the four lattice points that bound the runs — CENTERED on the
+	// point the runs converge at, not hung off it by a grid corner.
+	//
+	// A run's line enters its figure at StartX,StartY, so at a lattice point the
+	// line is at P + start. Placing the corner's own grid origin at P instead
+	// leaves the runs arriving somewhere along the corner's edge rather than
+	// heading into the middle of it, which reads as the runs passing BY the
+	// corner rather than ending in it.
+	cx := s.Across.StartX - s.Corner.W()/2
+	cy := s.Across.StartY - s.Corner.H()/2
+	add(s.Corner.Grid, cx, cy, RoleCorner)
+	add(s.Corner.Grid, s.Cols*ax+cx, s.Cols*ay+cy, RoleCorner)
+	add(s.Corner.Grid, s.Rows*dx+cx, s.Rows*dy+cy, RoleCorner)
+	add(s.Corner.Grid, s.Cols*ax+s.Rows*dx+cx, s.Cols*ay+s.Rows*dy+cy, RoleCorner)
 
 	// Runs strictly between them, one travel apart.
 	for k := 1; k < s.Cols; k++ {
@@ -159,8 +168,81 @@ func (l Layout) GridJoins() (Grid, int) {
 	// A margin, so a connector that wants to step outside the pieces has room.
 	const pad = 2
 	g := BlankGrid(maxX-minX+2*pad, maxY-minY+2*pad)
+	// The corners are where the runs STOP, so their footprints are kept clear
+	// and the runs are cut off at them. Drawing the runs whole and covering them
+	// with the corner leaves run ink inside and beyond it, which makes the
+	// corner look like an ornament laid on a continuous run rather than the
+	// place that run ends.
+	var keepOut []Rect
 	for _, p := range l.Places {
-		g.Stamp(p.Grid, p.GX-minX+pad, p.GY-minY+pad)
+		if p.Role != RoleCorner {
+			continue
+		}
+		keepOut = append(keepOut, Rect{
+			X0: p.GX - minX + pad, Y0: p.GY - minY + pad,
+			X1: p.GX - minX + pad + p.Grid.W(), Y1: p.GY - minY + pad + p.Grid.H(),
+		})
+	}
+	for _, p := range l.Places {
+		if p.Role == RoleCorner {
+			continue
+		}
+		g.StampOutside(p.Grid, p.GX-minX+pad, p.GY-minY+pad, keepOut)
+	}
+	for _, p := range l.Places {
+		if p.Role == RoleCorner {
+			g.Stamp(p.Grid, p.GX-minX+pad, p.GY-minY+pad)
+		}
 	}
 	return g, g.Join()
+}
+
+// FitSpec chooses the copy counts that fill a box of the given size, at roughly
+// the given cell size in pixels.
+//
+// This is the piece a border needs to be DYNAMIC. Everything else about a
+// composition is fixed by the figures, but the counts depend on the box, and a
+// box on a page is not known until it is measured — it changes with the
+// content, the window and the font. Asking a caller for cols and rows works for
+// a command run by hand and not at all for a page that resizes.
+//
+// After the turn, one copy of the across figure advances the length of its own
+// travel along the top, and likewise the down figure down the side, so the
+// counts are just the box divided by those lengths. Both are floored at one:
+// a box too small for even a single copy still gets a border, just a cramped
+// one, which is a better answer than none.
+func FitSpec(across, down, corner Figure, boxW, boxH, cell float64) Spec {
+	step := func(f Figure) float64 {
+		s := math.Hypot(float64(f.DX), float64(f.DY)) * cell
+		if s <= 0 {
+			return cell
+		}
+		return s
+	}
+	// The corners sit at the ends of the runs and stick out past them, so the
+	// runs have less room than the box. Subtracting one corner's turned extent
+	// accounts for both ends together — half of it protrudes at each. Without
+	// this every border came out a corner's width too big, consistently.
+	corn := math.Hypot(float64(corner.W()), float64(corner.H())) * cell
+	cols := int(math.Round(math.Max(boxW-corn, step(across)) / step(across)))
+	rows := int(math.Round(math.Max(boxH-corn, step(down)) / step(down)))
+	if cols < 1 {
+		cols = 1
+	}
+	if rows < 1 {
+		rows = 1
+	}
+	return Spec{Across: across, Down: down, Corner: corner, Cols: cols, Rows: rows}
+}
+
+// CellFor is the cell size, in pixels, at which this layout fills a box —
+// the counterpart to FitSpec, for when the counts are already chosen.
+func (l Layout) CellFor(boxW, boxH float64) float64 {
+	g := l.Grid()
+	x0, y0, x1, y1 := l.inkBox(g)
+	w, h := x1-x0, y1-y0
+	if w <= 0 || h <= 0 {
+		return 0
+	}
+	return math.Min(boxW/w, boxH/h)
 }

@@ -238,3 +238,108 @@ func (g Grid) Components() int {
 	}
 	return n
 }
+
+// StampOutside draws src at (x,y) but skips any cell inside one of the given
+// rectangles, so the drawing is cut off where they are rather than running
+// underneath them.
+//
+// This is how a run stops at a corner. Laying the run down whole and putting
+// the corner on top leaves the run's ink inside the corner, showing through it
+// and past it — the corner reads as something sitting ON the run instead of the
+// place the run ends.
+func (g Grid) StampOutside(src Grid, x, y int, keepOut []Rect) {
+	for i := range src {
+		for j := range src[i] {
+			if src[i][j] == Blank {
+				continue
+			}
+			yy, xx := y+i, x+j
+			if yy < 0 || yy >= g.H() || xx < 0 || xx >= g.W() {
+				continue
+			}
+			blocked := false
+			for _, r := range keepOut {
+				if r.Contains(xx, yy) {
+					blocked = true
+					break
+				}
+			}
+			if blocked {
+				continue
+			}
+			g[yy][xx] = MergeGlyph(g[yy][xx], src[i][j])
+		}
+	}
+}
+
+// Rect is a half-open cell rectangle.
+type Rect struct{ X0, Y0, X1, Y1 int }
+
+// Contains reports whether a cell is inside.
+func (r Rect) Contains(x, y int) bool { return x >= r.X0 && x < r.X1 && y >= r.Y0 && y < r.Y1 }
+
+// Grow expands a rectangle by n cells on every side.
+func (r Rect) Grow(n int) Rect { return Rect{r.X0 - n, r.Y0 - n, r.X1 + n, r.Y1 + n} }
+
+// RotSymmetry is the order of the figure's rotational symmetry: 4 when a
+// quarter turn leaves it unchanged, 2 when only a half turn does, 1 otherwise.
+//
+// A corner is seen four times, once per corner of the frame, each time mirrored
+// or turned. A figure with four-fold symmetry looks the same in all of them, so
+// the frame reads as one design rather than four rotations of a motif — which
+// is what makes a symmetric figure worth hunting for even though it is rarer.
+//
+// Four-fold symmetry needs a square grid, since a quarter turn swaps the sides.
+func (g Grid) RotSymmetry() int {
+	s := g.String()
+	if g.W() == g.H() && g.RotateCW().String() == s {
+		return 4
+	}
+	if g.Rotate(2).String() == s {
+		return 2
+	}
+	return 1
+}
+
+// MirrorAxes counts the reflections that leave the figure unchanged: across,
+// down, and the two diagonals. Four means every reflection, which together with
+// four-fold rotation is the full symmetry of the square.
+func (g Grid) MirrorAxes() int {
+	n := 0
+	s := g.String()
+	if g.MirrorH().String() == s {
+		n++
+	}
+	if g.MirrorV().String() == s {
+		n++
+	}
+	if g.W() == g.H() {
+		// The diagonals, as a quarter turn composed with a reflection.
+		if g.RotateCW().MirrorH().String() == s {
+			n++
+		}
+		if g.RotateCW().MirrorV().String() == s {
+			n++
+		}
+	}
+	return n
+}
+
+// Symmetry is the size of the figure's symmetry group, 1 to 8 — the number of
+// the eight ways of turning and flipping a square that leave it alone. Eight is
+// as symmetric as a figure on a grid can be.
+func (g Grid) Symmetry() int {
+	s := g.String()
+	n := 0
+	cur := g
+	for m := 0; m < 2; m++ {
+		for r := 0; r < 4; r++ {
+			if cur.String() == s {
+				n++
+			}
+			cur = cur.RotateCW()
+		}
+		cur = cur.MirrorH()
+	}
+	return n
+}
