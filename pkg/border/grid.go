@@ -210,23 +210,32 @@ func (g Grid) Components() int {
 		b, ok2 := Arms(g[r2][c2])
 		return ok1 && ok2 && a&mine != 0 && b&theirs != 0
 	}
-	var flood func(r, c int)
-	flood = func(r, c int) {
-		if seen[r][c] {
-			return
-		}
-		seen[r][c] = true
-		if linked(r, c, -1, 0, Up, Down) {
-			flood(r-1, c)
-		}
-		if linked(r, c, 1, 0, Down, Up) {
-			flood(r+1, c)
-		}
-		if linked(r, c, 0, -1, Left, Right) {
-			flood(r, c-1)
-		}
-		if linked(r, c, 0, 1, Right, Left) {
-			flood(r, c+1)
+	// The same explicit stack as label's, and for the same reason: a border is
+	// one long connected line, so recursing once per cell of it overflows the
+	// small wasm stack tinygo gives a browser.
+	var stack [][2]int
+	flood := func(r0, c0 int) {
+		stack = append(stack[:0], [2]int{r0, c0})
+		for len(stack) > 0 {
+			p := stack[len(stack)-1]
+			stack = stack[:len(stack)-1]
+			r, c := p[0], p[1]
+			if seen[r][c] {
+				continue
+			}
+			seen[r][c] = true
+			if linked(r, c, -1, 0, Up, Down) {
+				stack = append(stack, [2]int{r - 1, c})
+			}
+			if linked(r, c, 1, 0, Down, Up) {
+				stack = append(stack, [2]int{r + 1, c})
+			}
+			if linked(r, c, 0, -1, Left, Right) {
+				stack = append(stack, [2]int{r, c - 1})
+			}
+			if linked(r, c, 0, 1, Right, Left) {
+				stack = append(stack, [2]int{r, c + 1})
+			}
 		}
 	}
 	n := 0

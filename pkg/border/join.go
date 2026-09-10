@@ -33,24 +33,38 @@ func (g Grid) label() ([][]int, int) {
 		b, ok2 := Arms(g[r2][c2])
 		return ok1 && ok2 && a&mine != 0 && b&theirs != 0
 	}
+	// Flooded with an explicit stack, not by recursion.
+	//
+	// A border is one long connected line, so a recursive flood recurses once
+	// per cell of it — thousands deep on a frame of any size. That is fine on a
+	// host and fatal in a browser: tinygo's wasm stack is a few tens of
+	// kilobytes, and the store's page decorator hit runtime.runtimeFatal here,
+	// through nilPanic, on the first frame it tried to draw. An explicit stack
+	// puts the same walk on the heap, where the size is not a limit.
 	n := 0
-	var flood func(r, c int)
-	flood = func(r, c int) {
-		if lab[r][c] != -1 {
-			return
-		}
-		lab[r][c] = n
-		if linked(r, c, -1, 0, Up, Down) {
-			flood(r-1, c)
-		}
-		if linked(r, c, 1, 0, Down, Up) {
-			flood(r+1, c)
-		}
-		if linked(r, c, 0, -1, Left, Right) {
-			flood(r, c-1)
-		}
-		if linked(r, c, 0, 1, Right, Left) {
-			flood(r, c+1)
+	var stack [][2]int
+	flood := func(r0, c0 int) {
+		stack = append(stack[:0], [2]int{r0, c0})
+		for len(stack) > 0 {
+			p := stack[len(stack)-1]
+			stack = stack[:len(stack)-1]
+			r, c := p[0], p[1]
+			if lab[r][c] != -1 {
+				continue
+			}
+			lab[r][c] = n
+			if linked(r, c, -1, 0, Up, Down) {
+				stack = append(stack, [2]int{r - 1, c})
+			}
+			if linked(r, c, 1, 0, Down, Up) {
+				stack = append(stack, [2]int{r + 1, c})
+			}
+			if linked(r, c, 0, -1, Left, Right) {
+				stack = append(stack, [2]int{r, c - 1})
+			}
+			if linked(r, c, 0, 1, Right, Left) {
+				stack = append(stack, [2]int{r, c + 1})
+			}
 		}
 	}
 	for i := 0; i < h; i++ {
