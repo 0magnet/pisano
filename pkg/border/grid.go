@@ -700,3 +700,64 @@ func (g Grid) links(r, c int, a Arm) (live, dead int) {
 	}
 	return live, dead
 }
+
+// Smooth takes every arm that reaches for something not there off the character
+// carrying it, and reports how many characters changed.
+//
+// Erasing the cell is the wrong answer and Trim is where it belongs — only for
+// a spur hanging off the end of a line. Everywhere else a dead arm is a glyph
+// problem, not a placement problem: the cell is load-bearing and what sticks
+// out is a quarter of the character. A cross at a cut edge reaching into the
+// part that was cut away is a ├ that has been drawn as a ┼, and the fix is to
+// draw the ├. Erasing it instead opens a hole through the weave.
+//
+// Every one of the sixteen arm sets has a character, so this can always be
+// done. Nothing is approximated and nothing is dropped.
+//
+// One pass suffices, and this is not a compromise the way Trim's single pass
+// is: a LIVE link is mutual by definition, so shaving dead arms cannot kill
+// one, and a cell that loses every arm had no live link to lose. The grid comes
+// out of one pass with no dead arms anywhere and stays that way — running it
+// again changes nothing.
+func (g Grid) Smooth() int {
+	type at struct {
+		r, c int
+		ch   rune
+	}
+	var fix []at
+	for r := range g {
+		for c := range g[r] {
+			a, ok := Arms(g[r][c])
+			if !ok || a == 0 {
+				continue
+			}
+			live := a
+			for _, d := range [4]struct {
+				mine, theirs Arm
+				dr, dc       int
+			}{
+				{Up, Down, -1, 0}, {Right, Left, 0, 1},
+				{Down, Up, 1, 0}, {Left, Right, 0, -1},
+			} {
+				if a&d.mine == 0 {
+					continue
+				}
+				r2, c2 := r+d.dr, c+d.dc
+				if r2 < 0 || r2 >= len(g) || c2 < 0 || c2 >= len(g[r2]) {
+					live &^= d.mine
+					continue
+				}
+				if b, ok := Arms(g[r2][c2]); !ok || b&d.theirs == 0 {
+					live &^= d.mine
+				}
+			}
+			if live != a {
+				fix = append(fix, at{r, c, Glyph(live)})
+			}
+		}
+	}
+	for _, f := range fix {
+		g[f.r][f.c] = f.ch
+	}
+	return len(fix)
+}

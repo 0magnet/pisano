@@ -307,6 +307,7 @@ func (l Layout) GridJoins() (Grid, int) {
 	g.Trim()
 	if l.Spec.Detached {
 		g.Prune(smallestPiece(l.Places) / 2)
+		g.Smooth()
 		return g, 0
 	}
 	for _, p := range l.Places {
@@ -315,7 +316,12 @@ func (l Layout) GridJoins() (Grid, int) {
 		}
 	}
 	g.Prune(smallestPiece(l.Places) / 2)
-	return g, g.Join()
+	// Smoothing goes last of all. Join and Prune both leave dead arms behind —
+	// one by drawing into a cell, the other by emptying one — so anything that
+	// ran before them would have its work undone.
+	n := g.Join()
+	g.Smooth()
+	return g, n
 }
 
 // unit is the travel direction, or +x for a figure that does not travel.

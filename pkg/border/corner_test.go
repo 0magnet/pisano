@@ -182,3 +182,34 @@ func TestDetachedDrawsNoSegments(t *testing.T) {
 		t.Error("detached and joined frames are identical; the segments did nothing")
 	}
 }
+
+// Nothing may stick out. Every arm on every character has to reach a character
+// reaching back — no quarter-character spurs into empty space, whether the
+// frame is joined into one line or left in pieces.
+func TestNothingSticksOut(t *testing.T) {
+	for _, detached := range []bool{false, true} {
+		s := tuiSpec(t, Inward)
+		s.Detached = detached
+		l, err := Compose(s)
+		if err != nil {
+			t.Fatal(err)
+		}
+		g, _ := l.GridJoins()
+		for r := range g {
+			for c := range g[r] {
+				a, ok := Arms(g[r][c])
+				if !ok || a == 0 {
+					continue
+				}
+				if _, dead := g.links(r, c, a); dead > 0 {
+					t.Fatalf("detached=%v: %q at %d,%d has %d arm(s) reaching nothing",
+						detached, string(g[r][c]), c, r, dead)
+				}
+			}
+		}
+		// And smoothing is a fixed point: a second pass must change nothing.
+		if n := g.Smooth(); n != 0 {
+			t.Errorf("detached=%v: smoothing again changed %d characters", detached, n)
+		}
+	}
+}
