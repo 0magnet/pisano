@@ -323,3 +323,46 @@ func (f Figure) Band() float64 {
 	}
 	return hi - lo
 }
+
+// Axis is a point on the run's center line, in the figure's own grid.
+//
+// Not StartX,StartY, which is where the PATH happens to begin. Those are
+// different things and the gap between them is visible in the finished frame:
+// modulus 13 is five cells wide and its path starts at column 4, the right-hand
+// edge, so lining a corner up on the start puts the corner two cells off the
+// stripe the run actually draws. Measured on a 17/13/31 frame, that was the
+// verticals sitting a cell and a half left of their corners.
+//
+// Across the travel it is the middle of the ink, not the average of it: a run's
+// stripe is bounded by its extremes, and a figure with a dense knot at one edge
+// has a centroid pulled into the knot while the stripe it draws is unmoved.
+// Along the travel the average is right, and harmless either way — every point
+// on the line is as good as any other, and Compose only ever intersects it with
+// another line.
+func (f Figure) Axis() (x, y float64) {
+	t := math.Hypot(float64(f.DX), float64(f.DY))
+	if t == 0 {
+		return float64(f.W()-1) / 2, float64(f.H()-1) / 2
+	}
+	ux, uy := float64(f.DX)/t, float64(f.DY)/t
+	nx, ny := -uy, ux
+	lo, hi := math.MaxFloat64, -math.MaxFloat64
+	su, n := 0.0, 0
+	for r := range f.Grid {
+		for c := range f.Grid[r] {
+			if a, ok := Arms(f.Grid[r][c]); !ok || a == 0 {
+				continue
+			}
+			fc, fr := float64(c), float64(r)
+			d := fc*nx + fr*ny
+			lo, hi = math.Min(lo, d), math.Max(hi, d)
+			su += fc*ux + fr*uy
+			n++
+		}
+	}
+	if n == 0 {
+		return 0, 0
+	}
+	mid, avg := (lo+hi)/2, su/float64(n)
+	return mid*nx + avg*ux, mid*ny + avg*uy
+}

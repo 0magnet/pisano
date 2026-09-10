@@ -141,3 +141,49 @@ func (g Grid) Join() int {
 		added++
 	}
 }
+
+// Prune erases every connected piece smaller than minCells, and reports how
+// many cells it removed.
+//
+// The cut that stops a run at a corner is a straight line, and a wandering path
+// can cross a straight line many times — so what is left outside the corner is
+// usually the run, plus a few crumbs the cut sheared off it. They are not part
+// of the border and they are not worth reconnecting: drawing a connector to
+// each is how a frame ends up with thirty straight lines through it, which is
+// the one thing a woven border must not have.
+//
+// Sized against the smallest whole piece rather than by a constant, so it
+// scales with the figures and can never eat one. Anything at least half a piece
+// is left alone for Join to deal with, on the grounds that something that big
+// going missing would be a bug worth seeing rather than tidying away.
+func (g Grid) Prune(minCells int) int {
+	lab, n := g.label()
+	if n <= 1 {
+		return 0
+	}
+	size := make([]int, n)
+	for r := range lab {
+		for _, v := range lab[r] {
+			if v >= 0 {
+				size[v]++
+			}
+		}
+	}
+	biggest := 0
+	for i, s := range size {
+		if s > size[biggest] {
+			biggest = i
+		}
+	}
+	removed := 0
+	for r := range lab {
+		for c, v := range lab[r] {
+			if v < 0 || v == biggest || size[v] >= minCells {
+				continue
+			}
+			g[r][c] = Blank
+			removed++
+		}
+	}
+	return removed
+}

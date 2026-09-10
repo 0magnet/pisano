@@ -70,6 +70,9 @@ alone repeat one drawing hundreds of times.`,
 	var cornerScale float64
 	cmd.Flags().Float64Var(&cornerScale, "corner-scale", 3,
 		"how many times the widest run the corner must be; 10 is an order of magnitude, but only small runs leave room for it")
+	var cornerBias string
+	cmd.Flags().StringVar(&cornerBias, "corner-bias", "inside",
+		"which side of a corner's middle the runs come in on: inside or outside; a closed corner's middle is the hole its path encircles, so there is always a side")
 	var fit string
 	cmd.Flags().StringVar(&fit, "fit", "900x400", "box the border is scaled to fit, WxH in px")
 
@@ -138,7 +141,18 @@ alone repeat one drawing hundreds of times.`,
 					c.Extent(), big)
 			}
 		}
-		l, err := border.Compose(border.Spec{Across: a, Down: d, Corner: c, Cols: cols, Rows: rows})
+		var bias border.Bias
+		switch cornerBias {
+		case "inside":
+			bias = border.Inward
+		case "outside":
+			bias = border.Outward
+		default:
+			return fmt.Errorf("--corner-bias wants inside or outside, got %q", cornerBias)
+		}
+		l, err := border.Compose(border.Spec{
+			Across: a, Down: d, Corner: c, Cols: cols, Rows: rows, Bias: bias,
+		})
 		if err != nil {
 			return err
 		}

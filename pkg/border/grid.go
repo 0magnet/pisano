@@ -1,6 +1,9 @@
 package border
 
-import "strings"
+import (
+	"math"
+	"strings"
+)
 
 // Grid is a rectangular block of box characters — a figure, or a whole frame.
 // Rows are kept equal length so every transform is total.
@@ -397,9 +400,16 @@ func (g Grid) Silhouette() [][]bool {
 	return m
 }
 
-// StampClipped draws src at (x,y) but drops any cell falling inside the mask,
-// EXCEPT where the destination already carries a mark — there the two merge, so
-// the run ends joined to what stopped it rather than merely touching it.
+// StampClipped draws src at (x,y) and drops every cell falling inside the mask.
+//
+// A hard cut, with no exception for cells that land on a mark already there.
+// The exception used to be the joining mechanism — a run kept whatever cells
+// coincided with the corner's own ink, so it ended welded to what stopped it —
+// and on a sparse corner that reads well. On a dense one it is the opposite of
+// what it looks like: modulus 31 at four passes carries 117 marks in 64 cells,
+// so nearly every cell of the run coincides with something and nearly the whole
+// run survives inside the corner. Cut off and joined by a drawn segment looks
+// stopped; merged into a dense corner looks like passing straight through it.
 func (g Grid) StampClipped(src Grid, x, y int, mask [][]bool, mx, my int) {
 	inMask := func(gx, gy int) bool {
 		r, c := gy-my, gx-mx
@@ -414,7 +424,7 @@ func (g Grid) StampClipped(src Grid, x, y int, mask [][]bool, mx, my int) {
 			if yy < 0 || yy >= g.H() || xx < 0 || xx >= g.W() {
 				continue
 			}
-			if a, ok := Arms(g[yy][xx]); inMask(xx, yy) && (!ok || a == 0) {
+			if inMask(xx, yy) {
 				continue
 			}
 			g[yy][xx] = MergeGlyph(g[yy][xx], src[i][j])
@@ -522,4 +532,101 @@ func (g Grid) Overlay(x, y int, lines []string) {
 			}
 		}
 	}
+}
+
+// MeetRow is the row a horizontal run should join this figure along, and
+// MeetCol the column for a vertical one.
+//
+// A closed figure's middle is a HOLE. That is what closed means here — the path
+// comes back on itself, so it encircles blank space, and the center of the box
+// is the one place in the figure guaranteed to have nothing in it. Aiming a run
+// at the exact middle of a corner therefore aims it at nothing: modulus 31 at
+// four passes is eight cells square and columns 3 and 4 of rows 3 and 4 are
+// empty.
+//
+// So the run meets the figure just to one side of the middle, on the first row
+// or column that carries any ink. Which side is the caller's to choose and must
+// be MIRRORED around the frame: the top and bottom runs both offset the same
+// way in absolute terms is what makes one of them look tucked inside its
+// corners and the other hung outside them, even though the offset is identical.
+//
+// An even-sided figure can never be centered on an odd-width run anyway — the
+// middles fall half a cell apart — so there is no arrangement without a choice
+// here. There is only making the choice consistently.
+func (g Grid) MeetRow(below bool) int {
+	return meet(g.H(), below, func(r int) bool {
+		for c := range g[r] {
+			if a, ok := Arms(g[r][c]); ok && a != 0 {
+				return true
+			}
+		}
+		return false
+	})
+}
+
+func (g Grid) MeetCol(right bool) int {
+	return meet(g.W(), right, func(c int) bool {
+		for r := range g {
+			if c >= len(g[r]) {
+				continue
+			}
+			if a, ok := Arms(g[r][c]); ok && a != 0 {
+				return true
+			}
+		}
+		return false
+	})
+}
+
+// meet picks the marked line nearest the middle on the requested side.
+func meet(n int, after bool, marked func(int) bool) int {
+	mid := float64(n-1) / 2
+	best := -1
+	for i := range n {
+		if after && float64(i) <= mid {
+			continue
+		}
+		if !after && float64(i) >= mid {
+			continue
+		}
+		if !marked(i) {
+			continue
+		}
+		if best < 0 || math.Abs(float64(i)-mid) < math.Abs(float64(best)-mid) {
+			best = i
+		}
+	}
+	if best < 0 {
+		return n / 2
+	}
+	return best
+}
+
+// EdgeInk is the first and last marked cell along one row or column, and
+// whether there is any. It is where a connector has to start from: the run
+// outside a figure has to be joined to the figure's own outermost mark on the
+// line they share, not to the edge of its box.
+func (g Grid) EdgeInk(i int, row bool) (lo, hi int, ok bool) {
+	lo, hi = -1, -1
+	n := g.W()
+	if !row {
+		n = g.H()
+	}
+	for j := range n {
+		r, c := i, j
+		if !row {
+			r, c = j, i
+		}
+		if r < 0 || r >= len(g) || c < 0 || c >= len(g[r]) {
+			continue
+		}
+		if a, k := Arms(g[r][c]); !k || a == 0 {
+			continue
+		}
+		if lo < 0 {
+			lo = j
+		}
+		hi = j
+	}
+	return lo, hi, lo >= 0
 }
