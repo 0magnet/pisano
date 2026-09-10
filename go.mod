@@ -30,7 +30,7 @@ require (
 	// 3m0s, timing out". Nothing here needs what the newer versions added, and
 	// the browser build is not worth losing over it. charmbracelet/x/ansi
 	// follows it down: v0.11.8 is the release that requires the newer one.
-	github.com/mattn/go-runewidth v0.0.29 // indirect
+	github.com/mattn/go-runewidth v0.0.30 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/xo/terminfo v1.0.0 // indirect
