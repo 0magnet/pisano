@@ -47,10 +47,13 @@ type Tint [][]int
 // fell wherever the traversal happened to be, cutting across motifs instead of
 // following them.
 //
-// The four corners share the first color. A corner is one closed figure walked
-// four times, and pisano would give those four passes four colors; that needs
-// per-step data the composition does not keep, and four corners in four colors
-// would read as an accident rather than as a frame.
+// A corner is colored by its OWN walk, not by one flat color. It is a closed
+// figure walked four times, and pisano gives those four passes four colors;
+// Figure.Tint carries them, recorded when the figure was built, and mirrors
+// with the piece so each corner keeps its colors on the cells they belong to.
+//
+// It used to be given the first palette color outright, on the grounds that the
+// per-step data was gone. It was not gone, it had simply never been kept.
 func (l Layout) TintByCopy(g Grid, colors int) Tint {
 	if colors < 1 {
 		colors = 1
@@ -80,15 +83,21 @@ func (l Layout) TintByCopy(g Grid, colors int) Tint {
 			if p.Role != want {
 				continue
 			}
-			idx := 0
-			if p.Role != RoleCorner {
-				idx = ((p.Seq % colors) + colors) % colors
-			}
+			seq := ((p.Seq % colors) + colors) % colors
 			ox, oy := p.GX-minX+pad, p.GY-minY+pad
 			for r := range p.Grid {
 				for c := range p.Grid[r] {
 					if a, ok := Arms(p.Grid[r][c]); !ok || a == 0 {
 						continue
+					}
+					// A piece with its own tint keeps it: that is the
+					// figure walked by pisano's tinter, and for a corner
+					// walked four times it is four colors, not one.
+					// Without one — a run copy, which is a single pass —
+					// the copy number IS the pass number.
+					idx := seq
+					if p.Tint != nil && r < len(p.Tint) && c < len(p.Tint[r]) && p.Tint[r][c] >= 0 {
+						idx = p.Tint[r][c] % colors
 					}
 					if x, y := ox+c, oy+r; marked(x, y) {
 						t[y][x] = idx
@@ -170,4 +179,31 @@ func (g Grid) TintHTML(t Tint, colors []string) string {
 	}
 	closeSpan()
 	return b.String()
+}
+
+// mirrorH and mirrorV reflect a tint the way MirrorH and MirrorV reflect a
+// grid, so a mirrored piece keeps its colors on the cells they belong to.
+func (t Tint) mirrorH() Tint {
+	if t == nil {
+		return nil
+	}
+	out := make(Tint, len(t))
+	for r := range t {
+		out[r] = make([]int, len(t[r]))
+		for c := range t[r] {
+			out[r][c] = t[r][len(t[r])-1-c]
+		}
+	}
+	return out
+}
+
+func (t Tint) mirrorV() Tint {
+	if t == nil {
+		return nil
+	}
+	out := make(Tint, len(t))
+	for r := range t {
+		out[r] = append([]int(nil), t[len(t)-1-r]...)
+	}
+	return out
 }

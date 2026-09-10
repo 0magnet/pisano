@@ -73,7 +73,10 @@ func TestTintHTMLGroupsRuns(t *testing.T) {
 			}
 		}
 	}
-	if spans > marks/4 {
+	// Grouped, not one per cell. The bound is loose because a corner is now
+	// four colors of its own rather than one, so the frame changes color more
+	// often than the runs alone would.
+	if spans > marks/2 {
 		t.Errorf("%d spans for %d marks; runs are not being grouped", spans, marks)
 	}
 	if strings.Count(out, "</span>") != spans {

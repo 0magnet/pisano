@@ -71,6 +71,10 @@ type Placement struct {
 	Grid   Grid
 	GX, GY int
 	Role   Role
+	// Tint is the piece's own per-cell coloring, mirrored the same way its grid
+	// was. A corner carries one: it is a figure walked four times, and pisano
+	// gives those four passes four colors.
+	Tint Tint
 	// Seq is which copy of its run this is, counted from the corner the run
 	// starts at. It is what a color means: pisano tints a figure by the PASS
 	// that laid a step down, one solid color per pass stepping through the
@@ -159,13 +163,13 @@ func Compose(s Spec) (Layout, error) {
 	for _, q := range [4]struct{ flipX, flipY bool }{
 		{false, false}, {true, false}, {false, true}, {true, true},
 	} {
-		cg := s.Corner.Grid
+		cg, ct := s.Corner.Grid, s.Corner.Tint
 		mx, my := mc, mr
 		if q.flipX {
-			cg, mx = cg.MirrorH(), cw-1-mc
+			cg, ct, mx = cg.MirrorH(), ct.mirrorH(), cw-1-mc
 		}
 		if q.flipY {
-			cg, my = cg.MirrorV(), ch-1-mr
+			cg, ct, my = cg.MirrorV(), ct.mirrorV(), ch-1-mr
 		}
 		px, py := crossX, crossY
 		if q.flipX {
@@ -177,7 +181,7 @@ func Compose(s Spec) (Layout, error) {
 			py += s.Rows * dy
 		}
 		l.Places = append(l.Places, Placement{
-			Grid: cg, GX: px - mx, GY: py - my, Role: RoleCorner,
+			Grid: cg, Tint: ct, GX: px - mx, GY: py - my, Role: RoleCorner,
 			MeetX: mx, MeetY: my,
 		})
 	}

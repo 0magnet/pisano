@@ -3,6 +3,7 @@ package border
 import (
 	"math"
 	"sort"
+	"strconv"
 
 	"github.com/0magnet/pisano/pkg/pisano"
 )
@@ -21,6 +22,10 @@ type Figure struct {
 	// runs meet a corner off to one side of it.
 	StartX, StartY int
 	Points         int // path length, a fair measure of how busy it looks
+	// Tint is which of pisano's six colors each cell came out, from walking the
+	// figure with pisano's own tinter, or -1 where there is no mark. A figure
+	// walked once is one color; the corner, walked four times, is four.
+	Tint Tint
 }
 
 // W and H in cells.
@@ -114,6 +119,7 @@ func OfPasses(m, passes int) (Figure, bool) {
 		Closed: first.X == last.X && first.Y == last.Y,
 		StartX: first.X - minX,
 		StartY: first.Y - minY,
+		Tint:   tintOf(p, passes, minX, minY, maxX, maxY),
 		Points: len(pts),
 	}, true
 }
@@ -389,6 +395,20 @@ func (f Figure) RotateCW() Figure {
 	// from an origin that moves.
 	f.StartX, f.StartY = h-1-f.StartY, f.StartX
 	f.DX, f.DY = -f.DY, f.DX
+	if f.Tint != nil {
+		// The colors turn with the drawing. Leaving them behind is the same
+		// class of mistake as turning the picture without the travel: the
+		// figure would be tinted as if it had never moved.
+		w := len(f.Tint[0])
+		out := make(Tint, w)
+		for i := range out {
+			out[i] = make([]int, h)
+			for j := range out[i] {
+				out[i][j] = f.Tint[h-1-j][i]
+			}
+		}
+		f.Tint = out
+	}
 	return f
 }
 
@@ -401,3 +421,58 @@ func (f Figure) Rotate(n int) Figure {
 	}
 	return f
 }
+
+// tintOf walks the figure again with pisano's own tinter and records which of
+// the six colors each cell came out.
+//
+// The walk is the same one PathOf makes — PathOf is Walk with the steps
+// flattened — so the colors land on the cells the drawing was made from.
+//
+// TintStep, which is what the turtle command uses when nothing says otherwise:
+// a step takes the color of the pass that first walked it, and steps forward
+// through the palette each time it is walked again the same way. On a figure
+// walked once that is one color; on the corner, walked four times, it is the
+// four the terminal draws.
+//
+// The color is carried through the canvas as a decimal index rather than as an
+// escape, because the canvas keeps a string per cell and does not care what is
+// in it, and an index is what a renderer that is not a terminal can use.
+func tintOf(p pisano.Period, passes, minX, minY, maxX, maxY int) Tint {
+	steps := pisano.Walk(p, passes)
+	if len(steps) == 0 {
+		return nil
+	}
+	circuits := 1
+	if sh := pisano.Classify(p.Terms); !sh.Closed {
+		circuits = passes
+	}
+	if circuits < 1 {
+		circuits = 1
+	}
+	tinter := pisano.NewTinter(pisano.TintStep, tintColors, len(steps)/circuits)
+	cv := pisano.NewCanvas(minX, minY, maxX, maxY)
+	for _, s := range steps {
+		idx := tinter.Tint(s)
+		col := ""
+		if idx >= 0 {
+			col = strconv.Itoa(idx)
+		}
+		cv.Segment(s.From.X, s.From.Y, s.To.X, s.To.Y, col)
+	}
+	t := make(Tint, maxY-minY+1)
+	for r := range t {
+		t[r] = make([]int, maxX-minX+1)
+		for c := range t[r] {
+			t[r][c] = -1
+			if s := cv.ColorAt(minX+c, minY+r); s != "" {
+				if v, err := strconv.Atoi(s); err == nil {
+					t[r][c] = v
+				}
+			}
+		}
+	}
+	return t
+}
+
+// tintColors is how many colors a figure is tinted with: pisano's six.
+const tintColors = 6
