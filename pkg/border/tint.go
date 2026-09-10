@@ -25,8 +25,9 @@ import (
 // that survives losing the pen, and on a frame it is the one that reads: the
 // color travels round the border.
 //
-// Colors are pisano's own, from PassColors, so a bordered page and a pisano
-// sheet in the same theme are drawn from the same six.
+// Colors are pisano's own, from PassHex: the six its turtle command tints with
+// in a terminal, so a bordered page is the colors the tool draws. The SVG
+// sheets have a different palette and it is the wrong one here.
 
 // Tint is a palette index per cell, or -1 where there is no mark.
 type Tint [][]int
@@ -138,8 +139,7 @@ func (g Grid) TintAlong(colors int) Tint {
 // pisano sheet are drawn from the same six.
 func (g Grid) TintHTML(t Tint, colors []string) string {
 	if len(colors) == 0 {
-		p := pisano.PassColors(pisano.ThemeDark)
-		colors = p[:]
+		colors = pisano.PassHex()
 	}
 	var b strings.Builder
 	cur, open := -2, false

@@ -80,7 +80,7 @@ func TestTintHTMLGroupsRuns(t *testing.T) {
 		t.Error("spans are not balanced")
 	}
 	// pisano's own palette by default.
-	if !strings.Contains(out, "#8fc6f0") {
-		t.Error("the default palette is not pisano's dark pass palette")
+	if !strings.Contains(out, "#00cdcd") {
+		t.Error("the default palette is not pisano's terminal pass palette")
 	}
 }
