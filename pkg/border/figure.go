@@ -366,3 +366,38 @@ func (f Figure) Axis() (x, y float64) {
 	mid, avg := (lo+hi)/2, su/float64(n)
 	return mid*nx + avg*ux, mid*ny + avg*uy
 }
+
+// RotateCW turns the figure a quarter turn clockwise: the drawing, the travel,
+// and the point the path starts at, all together.
+//
+// Grid.RotateCW turns the picture, which is not the same as turning the figure.
+// A Figure is the drawing PLUS where it goes and where its line begins, and
+// Compose reads all three — turn only the picture and the border is composed
+// from a figure that travels one way and draws another.
+//
+// It is what lets one modulus serve both directions. Modulus 13 travels +0,-4,
+// which makes it a side; turned once it travels +4,+0 and makes a top, and the
+// two are square to each other by construction rather than by search. Any pair
+// found by SquarePartners is two different drawings that happen to run at right
+// angles; this is one drawing seen twice, which is what a frame usually wants.
+func (f Figure) RotateCW() Figure {
+	h := f.H()
+	f.Grid = f.Grid.RotateCW()
+	// A quarter turn clockwise sends (x,y) to (h-1-y, x) — rows become columns
+	// counted from the far end — and a vector (dx,dy) to (-dy,dx). The point
+	// and the vector transform differently because only the point is measured
+	// from an origin that moves.
+	f.StartX, f.StartY = h-1-f.StartY, f.StartX
+	f.DX, f.DY = -f.DY, f.DX
+	return f
+}
+
+// Rotate turns the figure n quarter turns clockwise; negative goes the other
+// way.
+func (f Figure) Rotate(n int) Figure {
+	n = ((n % 4) + 4) % 4
+	for range n {
+		f = f.RotateCW()
+	}
+	return f
+}

@@ -73,6 +73,10 @@ alone repeat one drawing hundreds of times.`,
 	var cornerBias string
 	cmd.Flags().StringVar(&cornerBias, "corner-bias", "inside",
 		"which side of a corner's middle the runs come in on: inside or outside; a closed corner's middle is the hole its path encircles, so there is always a side")
+	var acrossTurn, downTurn, cornerTurn int
+	cmd.Flags().IntVar(&acrossTurn, "across-turn", 0, "quarter turns clockwise to apply to the across figure; 1 makes a side figure into a top one, so one modulus can serve both directions")
+	cmd.Flags().IntVar(&downTurn, "down-turn", 0, "quarter turns clockwise to apply to the down figure")
+	cmd.Flags().IntVar(&cornerTurn, "corner-turn", 0, "quarter turns clockwise to apply to the corner figure")
 	var detached bool
 	cmd.Flags().BoolVar(&detached, "detached", false,
 		"leave the runs and corners as separate pieces: draw no segment between them and do not close the frame")
@@ -144,6 +148,7 @@ alone repeat one drawing hundreds of times.`,
 					c.Extent(), big)
 			}
 		}
+		a, d, c = a.Rotate(acrossTurn), d.Rotate(downTurn), c.Rotate(cornerTurn)
 		var bias border.Bias
 		switch cornerBias {
 		case "inside":

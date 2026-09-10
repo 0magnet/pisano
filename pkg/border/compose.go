@@ -165,20 +165,48 @@ func Compose(s Spec) (Layout, error) {
 		})
 	}
 
-	// Runs strictly between them, one travel apart.
-	// Runs from the first corner up to the last, so the final copy STARTS one
-	// travel before the far corner and reaches into it — as much of the run as
-	// can meet the corner does, and none of it carries on past.
+	// Runs strictly between them, one travel apart, and the far one placed by
+	// REFLECTING the near one rather than by copying it along.
 	//
-	// Going one further, to a copy starting AT the far corner, overshoots by a
-	// whole figure: a figure is about as wide as it travels, so that copy hangs
+	// Cols copies span corner to corner: copy k starts one travel short of
+	// where copy k+1 does, and the last reaches into the far corner. Going one
+	// further, to a copy starting AT the far corner, overshoots by a whole
+	// figure — a figure is about as wide as it travels, so that copy would hang
 	// its entire width outside the frame.
+	//
+	// The reflection is the same point as mirroring the corners, and it shows
+	// once both runs are the same drawing: a figure's ornament points one way,
+	// so a translated copy along the bottom has its tips turned into the frame
+	// while the top's are turned out of it.
+	//
+	// Mirroring the GRID in place is not enough, and measuring is the only way
+	// to know — it left 540 cells disagreeing with the frame's own mirror. A
+	// mirrored grid occupies the columns it always did, which is not where the
+	// reflection of the near run lands; the piece has to be positioned by
+	// reflecting it about the frame's middle, which is the crossing plus half
+	// of both spans. Twice that middle is an integer even when the middle is
+	// not, so the arithmetic stays exact.
+	twoCX := 2*crossX + s.Cols*ax + s.Rows*dx
+	twoCY := 2*crossY + s.Cols*ay + s.Rows*dy
+	// Only when the frame's own axes are the lattice's. A frame turned to lie
+	// along a diagonal has its mirror lines turned with it, and a turned line
+	// is not one a grid can be reflected in — the far run is then laid down by
+	// translation, as it always was.
+	square := (ax == 0 || ay == 0) && (dx == 0 || dy == 0)
 	for k := 0; k < s.Cols; k++ {
 		add(s.Across.Grid, k*ax, k*ay, RoleAcross)
+		if square {
+			add(s.Across.Grid.MirrorV(), k*ax, twoCY-k*ay-(s.Across.H()-1), RoleAcross)
+			continue
+		}
 		add(s.Across.Grid, k*ax+s.Rows*dx, k*ay+s.Rows*dy, RoleAcross)
 	}
 	for m := 0; m < s.Rows; m++ {
 		add(s.Down.Grid, m*dx, m*dy, RoleDown)
+		if square {
+			add(s.Down.Grid.MirrorH(), twoCX-m*dx-(s.Down.W()-1), m*dy, RoleDown)
+			continue
+		}
 		add(s.Down.Grid, s.Cols*ax+m*dx, s.Cols*ay+m*dy, RoleDown)
 	}
 	return l, nil
