@@ -1,6 +1,9 @@
 package border
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 // tuiSpec is the frame that has to work in a terminal: modulus 17 travels
 // -4,+0 and 13 travels +0,-4, so nothing needs turning, and 31 at four passes
@@ -211,5 +214,64 @@ func TestNothingSticksOut(t *testing.T) {
 		if n := g.Smooth(); n != 0 {
 			t.Errorf("detached=%v: smoothing again changed %d characters", detached, n)
 		}
+	}
+}
+
+// Inset moves the cut by the number of cells asked for, and a whole travel step
+// leaves the edge looking exactly as it did — that is the point of counting in
+// cells rather than steps.
+func TestInsetMovesTheCutByCells(t *testing.T) {
+	d, ok := OfPasses(13, 1)
+	if !ok {
+		t.Fatal("no figure for modulus 13")
+	}
+	c, ok := OfPasses(31, 4)
+	if !ok {
+		t.Fatal("no figure for modulus 31 at four passes")
+	}
+	across := d.RotateCW()
+	edge := func(inset int) (col int, shape string) {
+		l, err := Compose(Spec{
+			Across: across, Down: d, Corner: c, Cols: 12, Rows: 5,
+			Detached: true, Inset: inset,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		g, _ := l.GridJoins()
+		// The leftmost across ink: the run band's rows, clear of the corner.
+		x0, y0, _, _ := inkBounds(g)
+		top, bot := y0, y0+across.H()-1
+		col = 1 << 30
+		for r := top; r <= bot; r++ {
+			for x := x0 + c.W(); x < g.W(); x++ {
+				if a, ok := Arms(g[r][x]); ok && a != 0 {
+					if x < col {
+						col = x
+					}
+					break
+				}
+			}
+		}
+		var b strings.Builder
+		for r := top; r <= bot; r++ {
+			b.WriteString(string(g[r][col : col+6]))
+			b.WriteByte('\n')
+		}
+		return col, b.String()
+	}
+	c0, s0 := edge(0)
+	c1, _ := edge(1)
+	if c1 <= c0 {
+		t.Errorf("inset 1 starts the run at column %d, not further in than %d", c1, c0)
+	}
+	// A whole travel step is four cells here, and it must repeat.
+	step := across.DX
+	cs, ss := edge(step)
+	if ss != s0 {
+		t.Errorf("inset of one whole step (%d cells) changed the edge:\n%s\nwant:\n%s", step, ss, s0)
+	}
+	if cs-c0 != step {
+		t.Errorf("inset of %d cells moved the run %d columns, want %d", step, cs-c0, step)
 	}
 }

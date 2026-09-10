@@ -15,6 +15,21 @@ type Spec struct {
 	Cols   int    // copies of Across between the corners
 	Rows   int    // copies of Down between the corners
 	Bias   Bias   // which side of a corner's middle the runs meet it on
+	// Inset holds the runs back from the corners, in CELLS.
+	//
+	// The cut lands where a corner's box ends, which is wherever that happens
+	// to fall in the run's repeat: a figure is usually wider than it travels,
+	// so the copy nearest a corner is sliced through its motif and shows half
+	// an ornament. Which half is what this chooses.
+	//
+	// Cells rather than travel steps, and the difference matters. A run is
+	// periodic, so insetting by a whole step moves the cut a whole period and
+	// leaves it in exactly the same place in the motif — the same edge, further
+	// from the corner. Only a partial step changes which part of the motif ends
+	// up facing the corner, which is the thing worth choosing.
+	//
+	// Negative lets the runs reach further in instead.
+	Inset int
 	// Detached leaves the runs and the corners as separate pieces: no segment
 	// is drawn from a corner out to the run that stops at it, and no connector
 	// is drawn to close the frame. The border is then four runs and four
@@ -305,6 +320,8 @@ func (l Layout) GridJoins() (Grid, int) {
 	// side of the frame as well.
 	ua := unit(l.Spec.Across.DX, l.Spec.Across.DY)
 	ud := unit(l.Spec.Down.DX, l.Spec.Down.DY)
+	// How far past its box each corner holds the runs off, in cells.
+	back := float64(l.Spec.Inset)
 	var aSpans, dSpans [][2]float64
 	for _, p := range l.Places {
 		if p.Role != RoleCorner {
@@ -312,8 +329,8 @@ func (l Layout) GridJoins() (Grid, int) {
 		}
 		ox, oy := p.GX-minX+pad, p.GY-minY+pad
 		g.Stamp(p.Grid, ox, oy)
-		aSpans = append(aSpans, boxSpan(ox, oy, p.Grid.W(), p.Grid.H(), ua))
-		dSpans = append(dSpans, boxSpan(ox, oy, p.Grid.W(), p.Grid.H(), ud))
+		aSpans = append(aSpans, grow(boxSpan(ox, oy, p.Grid.W(), p.Grid.H(), ua), back))
+		dSpans = append(dSpans, grow(boxSpan(ox, oy, p.Grid.W(), p.Grid.H(), ud), back))
 	}
 	for _, p := range l.Places {
 		if p.Role == RoleCorner {
@@ -570,4 +587,9 @@ func smallestPiece(ps []Placement) int {
 		}
 	}
 	return best
+}
+
+// grow widens a span by n cells at each end, or narrows it when n is negative.
+func grow(s [2]float64, n float64) [2]float64 {
+	return [2]float64{s[0] - n, s[1] + n}
 }

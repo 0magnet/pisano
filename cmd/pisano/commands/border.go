@@ -77,6 +77,8 @@ alone repeat one drawing hundreds of times.`,
 	cmd.Flags().IntVar(&acrossTurn, "across-turn", 0, "quarter turns clockwise to apply to the across figure; 1 makes a side figure into a top one, so one modulus can serve both directions")
 	cmd.Flags().IntVar(&downTurn, "down-turn", 0, "quarter turns clockwise to apply to the down figure")
 	cmd.Flags().IntVar(&cornerTurn, "corner-turn", 0, "quarter turns clockwise to apply to the corner figure")
+	var inset int
+	cmd.Flags().IntVar(&inset, "inset", 0, "hold the runs back from the corners by this many cells; a whole travel step leaves the cut in the same place in the motif, a partial step changes which part of it faces the corner")
 	var detached bool
 	cmd.Flags().BoolVar(&detached, "detached", false,
 		"leave the runs and corners as separate pieces: draw no segment between them and do not close the frame")
@@ -160,7 +162,7 @@ alone repeat one drawing hundreds of times.`,
 		}
 		l, err := border.Compose(border.Spec{
 			Across: a, Down: d, Corner: c, Cols: cols, Rows: rows, Bias: bias,
-			Detached: detached,
+			Detached: detached, Inset: inset,
 		})
 		if err != nil {
 			return err
