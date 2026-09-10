@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"image/png"
 	"math"
 	"os"
 	"sort"
@@ -131,9 +132,9 @@ alone repeat one drawing hundreds of times.`,
 				fmt.Fprintf(cc.ErrOrStderr(), //nolint:errcheck // a note, not output
 					"note: mod %d is an open figure, so the corners will have loose ends\n", corner)
 			}
-			if big := math.Max(a.Extent(), d.Extent()); c.Extent() < big {
+			if big := math.Max(a.Band(), d.Band()); c.Extent() < big {
 				fmt.Fprintf(cc.ErrOrStderr(), //nolint:errcheck // a note, not output
-					"note: the corner (extent %.0f) is smaller than the widest run (%.0f), so the runs will swallow it\n",
+					"note: the corner (extent %.0f) is no wider than the thickest run (%.0f), so the runs will swallow it\n",
 					c.Extent(), big)
 			}
 		}
@@ -146,6 +147,18 @@ alone repeat one drawing hundreds of times.`,
 				"note: the down run lands at %.1f° rather than 90°, so the two runs are not square to each other\n",
 				l.DownAngle)
 		}
+		// A .png goes straight to a bitmap. It is the same composition the
+		// HTML carries, drawn without a browser in the way, which is the only
+		// render that can be checked from a script.
+		if strings.HasSuffix(out, ".png") {
+			f, err := os.Create(out) //nolint:gosec // the path is the user's own -o
+			if err != nil {
+				return err
+			}
+			defer f.Close() //nolint:errcheck // the encode error is the one that matters
+			return png.Encode(f, l.Image(int(fitW), int(fitH)))
+		}
+
 		// An upright border is a grid, and a grid can be printed. An angled one
 		// only exists once something can turn it, which here is CSS.
 		if out == "" && l.Upright(1) {

@@ -343,3 +343,81 @@ func (g Grid) Symmetry() int {
 	}
 	return n
 }
+
+// Silhouette is the region a figure occupies: for every row, the span from its
+// leftmost to its rightmost mark, and likewise down every column.
+//
+// A figure's bounding BOX is not its shape — most of the box is empty — so
+// clipping a run against the box cuts it off in blank space well before the
+// figure, and clipping against the marks alone barely cuts it at all. The
+// silhouette is the outline the eye reads as the figure's extent, and cutting
+// there is what makes a run look stopped BY the corner.
+func (g Grid) Silhouette() [][]bool {
+	h, w := g.H(), g.W()
+	m := make([][]bool, h)
+	for i := range m {
+		m[i] = make([]bool, w)
+	}
+	inked := func(r, c int) bool {
+		a, ok := Arms(g[r][c])
+		return ok && a != 0
+	}
+	for r := 0; r < h; r++ {
+		lo, hi := -1, -1
+		for c := 0; c < w; c++ {
+			if inked(r, c) {
+				if lo < 0 {
+					lo = c
+				}
+				hi = c
+			}
+		}
+		for c := lo; c >= 0 && c <= hi; c++ {
+			m[r][c] = true
+		}
+	}
+	// Intersected with the same by column, so a figure shaped like a cross does
+	// not swallow the empty quadrants between its arms.
+	for c := 0; c < w; c++ {
+		lo, hi := -1, -1
+		for r := 0; r < h; r++ {
+			if inked(r, c) {
+				if lo < 0 {
+					lo = r
+				}
+				hi = r
+			}
+		}
+		for r := 0; r < h; r++ {
+			if r < lo || r > hi || lo < 0 {
+				m[r][c] = false
+			}
+		}
+	}
+	return m
+}
+
+// StampClipped draws src at (x,y) but drops any cell falling inside the mask,
+// EXCEPT where the destination already carries a mark — there the two merge, so
+// the run ends joined to what stopped it rather than merely touching it.
+func (g Grid) StampClipped(src Grid, x, y int, mask [][]bool, mx, my int) {
+	inMask := func(gx, gy int) bool {
+		r, c := gy-my, gx-mx
+		return r >= 0 && r < len(mask) && c >= 0 && c < len(mask[r]) && mask[r][c]
+	}
+	for i := range src {
+		for j := range src[i] {
+			if src[i][j] == Blank {
+				continue
+			}
+			yy, xx := y+i, x+j
+			if yy < 0 || yy >= g.H() || xx < 0 || xx >= g.W() {
+				continue
+			}
+			if a, ok := Arms(g[yy][xx]); inMask(xx, yy) && (!ok || a == 0) {
+				continue
+			}
+			g[yy][xx] = MergeGlyph(g[yy][xx], src[i][j])
+		}
+	}
+}

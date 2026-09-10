@@ -93,29 +93,49 @@ func (g Grid) Join() int {
 		if n <= 1 {
 			return added
 		}
-		// Cells of piece 0, and of everything else, then the nearest pair.
-		bestD := 1 << 30
-		var br1, bc1, br2, bc2 int
-		for r1 := range lab {
-			for c1 := range lab[r1] {
-				if lab[r1][c1] != 0 {
-					continue
-				}
-				for r2 := range lab {
-					for c2 := range lab[r2] {
-						if lab[r2][c2] <= 0 {
-							continue
-						}
-						d := abs(r1-r2) + abs(c1-c2)
-						if d < bestD {
-							bestD, br1, bc1, br2, bc2 = d, r1, c1, r2, c2
-						}
-					}
+		// Nearest cell of another piece, by a breadth-first walk out from piece
+		// zero — linear in the grid.
+		//
+		// Comparing every cell of one piece against every cell of the others is
+		// the obvious way and is quadratic in the number of marks, which on a
+		// border a thousand cells on a side means billions of comparisons per
+		// join. It ran in well under a second on the small test borders and did
+		// not finish at all on a real one.
+		h, w := g.H(), g.W()
+		type qi struct{ r, c, sr, sc int }
+		seen := make([][]bool, h)
+		for i := range seen {
+			seen[i] = make([]bool, w)
+		}
+		var q []qi
+		for r := 0; r < h; r++ {
+			for c := 0; c < w; c++ {
+				if lab[r][c] == 0 {
+					q = append(q, qi{r, c, r, c})
+					seen[r][c] = true
 				}
 			}
 		}
-		if bestD == 1<<30 {
-			return added // nothing to join to; leave it rather than loop
+		found := false
+		var br1, bc1, br2, bc2 int
+		for i := 0; i < len(q) && !found; i++ {
+			cur := q[i]
+			for _, d := range [4][2]int{{-1, 0}, {1, 0}, {0, -1}, {0, 1}} {
+				r2, c2 := cur.r+d[0], cur.c+d[1]
+				if r2 < 0 || r2 >= h || c2 < 0 || c2 >= w || seen[r2][c2] {
+					continue
+				}
+				if lab[r2][c2] > 0 {
+					br1, bc1, br2, bc2 = cur.sr, cur.sc, r2, c2
+					found = true
+					break
+				}
+				seen[r2][c2] = true
+				q = append(q, qi{r2, c2, cur.sr, cur.sc})
+			}
+		}
+		if !found {
+			return added // nothing reachable to join to
 		}
 		g.connect(br1, bc1, br2, bc2)
 		added++

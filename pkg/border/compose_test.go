@@ -42,7 +42,11 @@ func TestComposeRejectsNonTravellingRuns(t *testing.T) {
 	t.Logf("rejected as expected: %v", err)
 }
 
-// Four corners, and the runs strictly between them.
+// Four corners, and one run copy per step along each edge.
+//
+// Cols copies span corner to corner: copy k starts one travel short of where
+// copy k+1 does, and the last one reaches into the far corner. A copy starting
+// AT the far corner would hang its whole width outside the frame.
 func TestComposePieceCounts(t *testing.T) {
 	cols, rows := 7, 4
 	l, err := Compose(Spec{
@@ -59,10 +63,10 @@ func TestComposePieceCounts(t *testing.T) {
 	if n[RoleCorner] != 4 {
 		t.Errorf("%d corners, want 4", n[RoleCorner])
 	}
-	if want := 2 * (cols - 1); n[RoleAcross] != want {
+	if want := 2 * cols; n[RoleAcross] != want {
 		t.Errorf("%d across pieces, want %d", n[RoleAcross], want)
 	}
-	if want := 2 * (rows - 1); n[RoleDown] != want {
+	if want := 2 * rows; n[RoleDown] != want {
 		t.Errorf("%d down pieces, want %d", n[RoleDown], want)
 	}
 }

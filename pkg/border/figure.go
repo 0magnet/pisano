@@ -255,8 +255,8 @@ func (f Figure) Extent() float64 {
 // CornerFor picks a corner figure for a border whose runs are these.
 //
 // Closed, so it has no loose ends of its own where a run arrives. At least
-// atLeast times the extent of the widest run, or the runs swallow it and it
-// stops reading as the place they end. And as symmetric as can be had at that
+// atLeast times the BAND of the widest run — the thickness of the stripe it
+// draws — or the runs swallow it and it stops reading as the place they end. And as symmetric as can be had at that
 // size — a corner is seen four times, once per corner, each time turned or
 // mirrored, so a symmetric figure makes the frame read as one design instead of
 // four rotations of a motif.
@@ -270,7 +270,7 @@ func (f Figure) Extent() float64 {
 // caller asking for a large corner is choosing the half turn whether or not it
 // knows it.
 func CornerFor(across, down Figure, cat []Figure, atLeast float64) (Figure, bool) {
-	need := math.Max(across.Extent(), down.Extent()) * atLeast
+	need := math.Max(across.Band(), down.Band()) * atLeast
 	var best Figure
 	bestSym := -1
 	for _, f := range cat {
@@ -288,4 +288,38 @@ func CornerFor(across, down Figure, cat []Figure, atLeast float64) (Figure, bool
 		}
 	}
 	return best, bestSym >= 0
+}
+
+// Band is how thick the stripe a run lays down is: the figure's extent measured
+// ACROSS its travel, in cells.
+//
+// This, not Extent, is the number a corner has to beat. A run figure is long in
+// the direction it travels — that is what traveling means — and its bounding
+// diagonal is mostly that length, so sizing a corner against Extent asks it to
+// be bigger than the whole repeating unit rather than bigger than the line the
+// run draws. The two differ by a lot: a figure 68 cells along and 7 across has
+// an Extent of 68 and a Band of 7, and a corner ten times the Band is a corner
+// that reads as the end of the line, while ten times the Extent does not exist.
+func (f Figure) Band() float64 {
+	t := math.Hypot(float64(f.DX), float64(f.DY))
+	if t == 0 {
+		return f.Extent()
+	}
+	// The unit normal to the travel; the projection onto it is the distance
+	// either side of the run's own axis.
+	nx, ny := -float64(f.DY)/t, float64(f.DX)/t
+	lo, hi := math.MaxFloat64, -math.MaxFloat64
+	for r := range f.Grid {
+		for c := range f.Grid[r] {
+			if a, ok := Arms(f.Grid[r][c]); !ok || a == 0 {
+				continue
+			}
+			d := float64(c)*nx + float64(r)*ny
+			lo, hi = math.Min(lo, d), math.Max(hi, d)
+		}
+	}
+	if hi < lo {
+		return 0
+	}
+	return hi - lo
 }

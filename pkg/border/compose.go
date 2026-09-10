@@ -78,27 +78,42 @@ func Compose(s Spec) (Layout, error) {
 	ax, ay := s.Across.DX, s.Across.DY
 	dx, dy := s.Down.DX, s.Down.DY
 
-	// Corners at the four lattice points that bound the runs — CENTERED on the
-	// point the runs converge at, not hung off it by a grid corner.
+	// Corners sit where the two runs' LINES CROSS, centered on that point.
 	//
-	// A run's line enters its figure at StartX,StartY, so at a lattice point the
-	// line is at P + start. Placing the corner's own grid origin at P instead
-	// leaves the runs arriving somewhere along the corner's edge rather than
-	// heading into the middle of it, which reads as the runs passing BY the
-	// corner rather than ending in it.
-	cx := s.Across.StartX - s.Corner.W()/2
-	cy := s.Across.StartY - s.Corner.H()/2
+	// A run does not enter its figure at the figure's corner: its path starts
+	// at StartX,StartY, so the line a run draws along the top of the frame is
+	// the line through that point in the direction it travels. The two runs
+	// meeting at a frame corner are two such lines, and they cross at one
+	// place. Putting the corner figure's middle there is what makes both runs
+	// head INTO it: each is aimed at the middle and stops at the first mark it
+	// meets, which is the mark nearest the middle along that line.
+	//
+	// Aiming at the nearest inked cell to the middle instead — which is what
+	// this did before — lines the corner up with ONE of the runs and lets the
+	// other arrive wherever it happens to. On a ring-shaped corner that put
+	// both runs onto the same side of the ring, so the frame's corner read as
+	// a bend in one line with an ornament stuck to it.
+	crossX, crossY := runCross(s.Across, s.Down)
+	cx := crossX - s.Corner.Grid.W()/2
+	cy := crossY - s.Corner.Grid.H()/2
 	add(s.Corner.Grid, cx, cy, RoleCorner)
 	add(s.Corner.Grid, s.Cols*ax+cx, s.Cols*ay+cy, RoleCorner)
 	add(s.Corner.Grid, s.Rows*dx+cx, s.Rows*dy+cy, RoleCorner)
 	add(s.Corner.Grid, s.Cols*ax+s.Rows*dx+cx, s.Cols*ay+s.Rows*dy+cy, RoleCorner)
 
 	// Runs strictly between them, one travel apart.
-	for k := 1; k < s.Cols; k++ {
+	// Runs from the first corner up to the last, so the final copy STARTS one
+	// travel before the far corner and reaches into it — as much of the run as
+	// can meet the corner does, and none of it carries on past.
+	//
+	// Going one further, to a copy starting AT the far corner, overshoots by a
+	// whole figure: a figure is about as wide as it travels, so that copy hangs
+	// its entire width outside the frame.
+	for k := 0; k < s.Cols; k++ {
 		add(s.Across.Grid, k*ax, k*ay, RoleAcross)
 		add(s.Across.Grid, k*ax+s.Rows*dx, k*ay+s.Rows*dy, RoleAcross)
 	}
-	for m := 1; m < s.Rows; m++ {
+	for m := 0; m < s.Rows; m++ {
 		add(s.Down.Grid, m*dx, m*dy, RoleDown)
 		add(s.Down.Grid, s.Cols*ax+m*dx, s.Cols*ay+m*dy, RoleDown)
 	}
@@ -162,36 +177,55 @@ func (l Layout) Grid() Grid {
 }
 
 // GridJoins is Grid, also reporting how many connectors had to be drawn. Zero
-// means the figures met on their own.
+// means the figures met on their own, which is the aim: a connector is a
+// straight line drawn between two figures, and it looks like one.
 func (l Layout) GridJoins() (Grid, int) {
 	minX, minY, maxX, maxY := l.Bounds()
 	// A margin, so a connector that wants to step outside the pieces has room.
 	const pad = 2
 	g := BlankGrid(maxX-minX+2*pad, maxY-minY+2*pad)
-	// The corners are where the runs STOP, so their footprints are kept clear
-	// and the runs are cut off at them. Drawing the runs whole and covering them
-	// with the corner leaves run ink inside and beyond it, which makes the
-	// corner look like an ornament laid on a continuous run rather than the
-	// place that run ends.
-	var keepOut []Rect
+	// Corners first, then the runs clipped against them: a run keeps every
+	// cell outside a corner and every cell that lands ON one of its marks, so
+	// it is cut off at the corner's outline and joined where it meets a
+	// stroke. The corners are where the runs STOP, and this is what makes
+	// them look it.
+	//
+	// Two earlier attempts are worth knowing about, because both look
+	// plausible. Drawing the runs whole and stamping the corners over them
+	// leaves run ink inside and beyond the corner, so the corner reads as an
+	// ornament laid on a line that carries on underneath. Clipping against
+	// the corner's bounding BOX instead cuts the run off in blank space well
+	// short of any mark — which is what used to force connectors to be drawn,
+	// and a drawn connector looks like the straight line it is.
+	//
+	// ONE mask covering every corner, not one pass per corner: clipping a run
+	// separately against each would draw, on the pass for corner B, exactly
+	// the cells corner A had just excluded, and nothing would be cut at all.
+	blocked := make([][]bool, g.H())
+	for i := range blocked {
+		blocked[i] = make([]bool, g.W())
+	}
 	for _, p := range l.Places {
 		if p.Role != RoleCorner {
 			continue
 		}
-		keepOut = append(keepOut, Rect{
-			X0: p.GX - minX + pad, Y0: p.GY - minY + pad,
-			X1: p.GX - minX + pad + p.Grid.W(), Y1: p.GY - minY + pad + p.Grid.H(),
-		})
-	}
-	for _, p := range l.Places {
-		if p.Role == RoleCorner {
-			continue
+		ox, oy := p.GX-minX+pad, p.GY-minY+pad
+		g.Stamp(p.Grid, ox, oy)
+		sil := p.Grid.Silhouette()
+		for r := range sil {
+			for c := range sil[r] {
+				if !sil[r][c] {
+					continue
+				}
+				if yy, xx := oy+r, ox+c; yy >= 0 && yy < g.H() && xx >= 0 && xx < g.W() {
+					blocked[yy][xx] = true
+				}
+			}
 		}
-		g.StampOutside(p.Grid, p.GX-minX+pad, p.GY-minY+pad, keepOut)
 	}
 	for _, p := range l.Places {
-		if p.Role == RoleCorner {
-			g.Stamp(p.Grid, p.GX-minX+pad, p.GY-minY+pad)
+		if p.Role != RoleCorner {
+			g.StampClipped(p.Grid, p.GX-minX+pad, p.GY-minY+pad, blocked, 0, 0)
 		}
 	}
 	return g, g.Join()
@@ -245,4 +279,28 @@ func (l Layout) CellFor(boxW, boxH float64) float64 {
 		return 0
 	}
 	return math.Min(boxW/w, boxH/h)
+}
+
+// runCross is the lattice point where the across run's line meets the down
+// run's, in the corner where both begin.
+//
+// Each run is a line rather than a ray for this purpose: the crossing is
+// usually a little way BACK from where either run starts, which is exactly
+// right — that is the point both runs are heading away from, and so the point
+// a corner has to be centered on for them to look like they came out of it.
+//
+// Parallel runs have no crossing. That is not a real border — the sides would
+// lie along the top — and Square already reports it, so the across figure's own
+// start is a harmless answer to give back.
+func runCross(across, down Figure) (x, y int) {
+	ax, ay := float64(across.DX), float64(across.DY)
+	dx, dy := float64(down.DX), float64(down.DY)
+	det := dx*ay - ax*dy
+	if det == 0 {
+		return across.StartX, across.StartY
+	}
+	ex := float64(across.StartX - down.StartX)
+	ey := float64(across.StartY - down.StartY)
+	t := (dx*ey - dy*ex) / det
+	return across.StartX - int(math.Round(t*ax)), across.StartY - int(math.Round(t*ay))
 }
