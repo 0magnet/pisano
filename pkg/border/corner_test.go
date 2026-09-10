@@ -295,12 +295,24 @@ func TestRunsMeetCornersAtTheCrossing(t *testing.T) {
 	}
 	across := d.RotateCW()
 	for _, f := range []Figure{across, d} {
-		lo, hi, ok := crossings(f)
+		lows, highs, ok := crossings(f)
 		if !ok {
 			t.Fatalf("modulus %d: no cut found", f.Mod)
 		}
-		offLo, _ := leadOffset(f, lo, true)
-		offHi, _ := leadOffset(f, hi, false)
+		// Every phase offered has to be as good as the rest, since the choice
+		// between them is made on distance alone.
+		for _, p := range lows {
+			if o, _ := leadOffset(f, p, true); math.Abs(o) > 0.5 {
+				t.Errorf("modulus %d: near cut %d is %+.1f off the center line", f.Mod, p, o)
+			}
+		}
+		for _, p := range highs {
+			if o, _ := leadOffset(f, p, false); math.Abs(o) > 0.5 {
+				t.Errorf("modulus %d: far cut %d is %+.1f off the center line", f.Mod, p, o)
+			}
+		}
+		offLo, _ := leadOffset(f, lows[0], true)
+		offHi, _ := leadOffset(f, highs[0], false)
 		// Half a cell is as close as an even-sided stripe can come to a center
 		// line that falls between rows; a whole cell is a peak.
 		if math.Abs(offLo) > 0.5 {

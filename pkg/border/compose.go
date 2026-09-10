@@ -703,46 +703,50 @@ func leadOffset(f Figure, phase int, low bool) (float64, bool) {
 	return float64(cLo+cHi)/2 - axis, true
 }
 
-// crossings is where along its period a run should be cut at each end so that
-// the part meeting the corner is the crossing rather than a peak or a trough.
+// crossings is where along its period a run may be cut at each end so that the
+// part meeting the corner is the crossing of its wave rather than a peak or a
+// trough.
 //
-// Both ends are chosen together, out of every combination, because they cannot
-// be chosen with one number. They travel through the period in opposite
-// directions — hold both ends back by a step and the near cut moves one way
-// through the wave while the far cut moves the other — so a single offset that
-// puts the crossing against the left corner puts a peak against the right one.
-// That is moving the fault rather than curing it.
+// EVERY phase that does it, not one of them, because there is usually more than
+// one and the choice between them belongs downstream: they sit different
+// distances from the corner, and which is nearest depends on where the corner
+// ended up. Answering with a single phase here is what left a three-cell gap
+// where one would do.
 //
-// The tie-break asks for the two ends to come out ALIKE. Where several cuts sit
-// equally near the center line, the frame reads better for having its two ends
-// match than for either being a hair closer on its own.
-func crossings(f Figure) (low, high int, ok bool) {
+// Both ends are worked out together, since they cannot be chosen with one
+// number: they travel through the period in opposite directions, so a single
+// offset that puts the crossing against the left corner puts a peak against the
+// right one.
+func crossings(f Figure) (lows, highs []int, ok bool) {
 	t := phaseOf(f)
 	if t == 0 {
-		return 0, 0, false
+		return nil, nil, false
 	}
-	lows := make([]float64, t)
-	highs := make([]float64, t)
+	near := make([]float64, t)
+	far := make([]float64, t)
 	for p := range t {
-		var okL, okH bool
-		lows[p], okL = leadOffset(f, p, true)
-		highs[p], okH = leadOffset(f, p, false)
-		if !okL || !okH {
-			return 0, 0, false
+		var okN, okF bool
+		near[p], okN = leadOffset(f, p, true)
+		far[p], okF = leadOffset(f, p, false)
+		if !okN || !okF {
+			return nil, nil, false
 		}
 	}
-	best := math.MaxFloat64
-	for l := range t {
-		for h := range t {
-			// Near the middle at both ends first, then alike.
-			score := math.Abs(lows[l]) + math.Abs(highs[h]) +
-				0.5*math.Abs(lows[l]+highs[h])
-			if score < best-1e-9 {
-				best, low, high, ok = score, l, h, true
+	pick := func(off []float64) []int {
+		best := math.MaxFloat64
+		for _, v := range off {
+			best = math.Min(best, math.Abs(v))
+		}
+		var out []int
+		for p, v := range off {
+			if math.Abs(v) <= best+1e-9 {
+				out = append(out, p)
 			}
 		}
+		return out
 	}
-	return low, high, ok
+	lows, highs = pick(near), pick(far)
+	return lows, highs, len(lows) > 0 && len(highs) > 0
 }
 
 // phaseOf is a run's period in cells, or zero if it has none worth counting.
@@ -756,15 +760,12 @@ func phaseOf(f Figure) int {
 	return 0
 }
 
-// endPhases is where in its period a run should be cut at each end: the zero
-// crossings, or step zero for a run whose wave cannot be read.
-func endPhases(f Figure) (low, high int) {
-	if phaseOf(f) == 0 {
-		return 0, 0
-	}
+// endPhases is where in its period a run may be cut at each end, or step zero
+// alone for a run whose wave cannot be read.
+func endPhases(f Figure) (lows, highs []int) {
 	l, h, ok := crossings(f)
 	if !ok {
-		return 0, 0
+		return []int{0}, []int{0}
 	}
 	return l, h
 }
@@ -779,7 +780,7 @@ func endPhases(f Figure) (low, high int) {
 // Which end a corner is depends on where it sits along the run, so the spans
 // are sorted rather than assumed: the two nearest the run's start take the near
 // phase and the two beyond it the far one.
-func phaseSpans(spans [][2]float64, origin float64, period, low, high, inset int) {
+func phaseSpans(spans [][2]float64, origin float64, period int, lows, highs []int, inset int) {
 	if len(spans) == 0 {
 		return
 	}
@@ -802,11 +803,32 @@ func phaseSpans(spans [][2]float64, origin float64, period, low, high, inset int
 			// The run starts beyond this corner: the first cell it keeps is
 			// the one after the span, and that is what has to be in phase.
 			first := int(math.Floor(s[1])) + 1
-			spans[i][1] += float64(wrap(low-(first-int(origin))) + inset)
+			spans[i][1] += float64(nearest(wrap, lows, first-int(origin), false) + inset)
 			continue
 		}
 		// The run ends before this one, so it is the last cell kept.
 		last := int(math.Ceil(s[0])) - 1
-		spans[i][0] -= float64(wrap((last-int(origin))-high) + inset)
+		spans[i][0] -= float64(nearest(wrap, highs, last-int(origin), true) + inset)
 	}
+}
+
+// nearest is the smallest push a cut needs to land on one of the wanted phases.
+//
+// Every phase in the list is as good as the others for how the run meets the
+// corner, so the one to take is whichever asks the run to give up least ground.
+// That is the difference between a corner sitting a cell from its runs and one
+// sitting most of a period away.
+func nearest(wrap func(int) int, want []int, at int, back bool) int {
+	best := 1 << 30
+	for _, w := range want {
+		d := wrap(w - at)
+		if back {
+			d = wrap(at - w)
+		}
+		best = min(best, d)
+	}
+	if best == 1<<30 {
+		return 0
+	}
+	return best
 }
