@@ -126,3 +126,59 @@ func TestBiasSwapsSides(t *testing.T) {
 			midY, a.MeetY, b.MeetY)
 	}
 }
+
+// Trim takes off the loose ends and nothing else. Two things have to survive
+// it: the frame stays one line, and every piece stays where it was — a rule
+// that erased crosses along a cut edge would punch a hole through the weave and
+// part the run from its corner.
+func TestTrimKeepsTheFrameWhole(t *testing.T) {
+	l, err := Compose(tuiSpec(t, Inward))
+	if err != nil {
+		t.Fatal(err)
+	}
+	g, joins := l.GridJoins()
+	if joins != 0 || g.Components() != 1 {
+		t.Fatalf("%d connectors and %d pieces after trimming, want 0 and 1",
+			joins, g.Components())
+	}
+	// Nothing left hanging by one link with an arm into the void.
+	for r := range g {
+		for c := range g[r] {
+			a, ok := Arms(g[r][c])
+			if !ok || a == 0 {
+				continue
+			}
+			if live, dead := g.links(r, c, a); live <= 1 && dead > 0 {
+				t.Fatalf("loose end still at %d,%d: %q", c, r, string(g[r][c]))
+			}
+		}
+	}
+}
+
+// Detached is a look, not a failure to join: the runs stop at the corners and
+// nothing is drawn between them, so the frame is eight pieces on purpose.
+func TestDetachedDrawsNoSegments(t *testing.T) {
+	s := tuiSpec(t, Inward)
+	s.Detached = true
+	l, err := Compose(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g, joins := l.GridJoins()
+	if joins != 0 {
+		t.Errorf("%d connectors drawn, want none at all when detached", joins)
+	}
+	if n := g.Components(); n != 8 {
+		t.Errorf("%d pieces, want 8: four runs and four corners", n)
+	}
+	// The corners have to come through untouched — no arm grafted on by a
+	// segment that was not drawn.
+	joined, err := Compose(tuiSpec(t, Inward))
+	if err != nil {
+		t.Fatal(err)
+	}
+	jg, _ := joined.GridJoins()
+	if g.String() == jg.String() {
+		t.Error("detached and joined frames are identical; the segments did nothing")
+	}
+}

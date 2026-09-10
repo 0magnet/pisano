@@ -15,6 +15,12 @@ type Spec struct {
 	Cols   int    // copies of Across between the corners
 	Rows   int    // copies of Down between the corners
 	Bias   Bias   // which side of a corner's middle the runs meet it on
+	// Detached leaves the runs and the corners as separate pieces: no segment
+	// is drawn from a corner out to the run that stops at it, and no connector
+	// is drawn to close the frame. The border is then four runs and four
+	// corners that meet by proximity rather than by line, which is a look worth
+	// having and not a failure to join.
+	Detached bool
 }
 
 // Bias says which side of a corner's middle the runs come in on.
@@ -290,6 +296,18 @@ func (l Layout) GridJoins() (Grid, int) {
 			u, spans = ud, dSpans
 		}
 		g.stampCut(p.Grid, p.GX-minX+pad, p.GY-minY+pad, u, spans)
+	}
+	// Loose ends go BEFORE the segments are drawn, so a segment reaches what is
+	// left rather than what was about to be rubbed out.
+	//
+	// A straight cut through a woven run leaves a fringe: cells whose arms were
+	// reaching for the cells the cut took, now pointing at nothing. Trim takes
+	// exactly one cell off each, which is the whole of the fringe and none of
+	// the run.
+	g.Trim()
+	if l.Spec.Detached {
+		g.Prune(smallestPiece(l.Places) / 2)
+		return g, 0
 	}
 	for _, p := range l.Places {
 		if p.Role == RoleCorner {

@@ -630,3 +630,73 @@ func (g Grid) EdgeInk(i int, row bool) (lo, hi int, ok bool) {
 	}
 	return lo, hi, lo >= 0
 }
+
+// Trim erases the loose ends: marks held on by at most one link that also have
+// an arm reaching for something that is not there. It reports how many it
+// removed.
+//
+// Both halves of that test earn their place. Without the dead arm, a tick that
+// is properly attached at its one end counts as loose and the figures lose
+// their deliberate spurs — modulus 17 draws a ╵ and means it. Without the
+// single link, every cross along a cut edge qualifies, because a straight cut
+// leaves a whole column of them with one arm reaching into the removed part;
+// erasing those punches a hole clean through the weave and the run comes away
+// from its corner. What is left is what actually reads as loose: a spur hanging
+// off the end of a line with nothing beyond it.
+//
+// One pass, deliberately, and this is the whole design: a turtle path is a line
+// with two free ends, so trimming loose ends REPEATEDLY would walk the length
+// of the path and rub the entire figure out. One pass takes one cell off each
+// loose end, which is what the user of a cut edge wants and no more.
+//
+// The set is worked out from the grid as it stands and erased afterwards, not
+// as it goes. Erasing in place would leave a cell's fate depending on whether
+// its neighbor was visited first, which for a left-to-right scan means an end
+// pointing left is trimmed and the same end pointing right is not.
+func (g Grid) Trim() int {
+	type at struct{ r, c int }
+	var doomed []at
+	for r := range g {
+		for c := range g[r] {
+			a, ok := Arms(g[r][c])
+			if !ok || a == 0 {
+				continue
+			}
+			live, dead := g.links(r, c, a)
+			if live <= 1 && dead > 0 {
+				doomed = append(doomed, at{r, c})
+			}
+		}
+	}
+	for _, d := range doomed {
+		g[d.r][d.c] = Blank
+	}
+	return len(doomed)
+}
+
+// links counts a cell's arms that reach a cell reaching back, and those that do
+// not. Off the grid counts as dead: there is nothing out there either.
+func (g Grid) links(r, c int, a Arm) (live, dead int) {
+	for _, d := range [4]struct {
+		mine, theirs Arm
+		dr, dc       int
+	}{
+		{Up, Down, -1, 0}, {Right, Left, 0, 1},
+		{Down, Up, 1, 0}, {Left, Right, 0, -1},
+	} {
+		if a&d.mine == 0 {
+			continue
+		}
+		r2, c2 := r+d.dr, c+d.dc
+		if r2 < 0 || r2 >= len(g) || c2 < 0 || c2 >= len(g[r2]) {
+			dead++
+			continue
+		}
+		if b, ok := Arms(g[r2][c2]); ok && b&d.theirs != 0 {
+			live++
+			continue
+		}
+		dead++
+	}
+	return live, dead
+}

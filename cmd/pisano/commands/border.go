@@ -73,6 +73,9 @@ alone repeat one drawing hundreds of times.`,
 	var cornerBias string
 	cmd.Flags().StringVar(&cornerBias, "corner-bias", "inside",
 		"which side of a corner's middle the runs come in on: inside or outside; a closed corner's middle is the hole its path encircles, so there is always a side")
+	var detached bool
+	cmd.Flags().BoolVar(&detached, "detached", false,
+		"leave the runs and corners as separate pieces: draw no segment between them and do not close the frame")
 	var fit string
 	cmd.Flags().StringVar(&fit, "fit", "900x400", "box the border is scaled to fit, WxH in px")
 
@@ -152,6 +155,7 @@ alone repeat one drawing hundreds of times.`,
 		}
 		l, err := border.Compose(border.Spec{
 			Across: a, Down: d, Corner: c, Cols: cols, Rows: rows, Bias: bias,
+			Detached: detached,
 		})
 		if err != nil {
 			return err
