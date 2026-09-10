@@ -1,6 +1,7 @@
 package border
 
 import (
+	"math"
 	"sort"
 
 	"github.com/0magnet/pisano/pkg/pisano"
@@ -150,4 +151,61 @@ func splitTrim(s string) []string {
 		}
 	}
 	return append(out, s[start:])
+}
+
+// Angle is the direction the path travels, in degrees, measured the way the
+// screen measures: x to the right, y down. Zero for a figure that goes nowhere.
+func (f Figure) Angle() float64 {
+	if !f.Travels() {
+		return 0
+	}
+	return math.Atan2(float64(f.DY), float64(f.DX)) * 180 / math.Pi
+}
+
+// SquareTo reports whether this figure can run down the side of a border whose
+// top is `across`: the two travels must be a quarter turn apart, within tol
+// degrees.
+//
+// This is the difference between a border and a parallelogram. Both runs are
+// turned by the same angle — that is what keeps them on one lattice — so if
+// their travels are not perpendicular to begin with, no rotation will make the
+// frame square, and the result leans.
+func (f Figure) SquareTo(across Figure, tol float64) bool {
+	if !f.Travels() || !across.Travels() {
+		return false
+	}
+	d := math.Mod(math.Abs(f.Angle()-across.Angle()), 180)
+	return math.Abs(d-90) <= tol
+}
+
+// SquarePartners returns the figures in cat that can run down the side of a
+// border topped by `across`, nearest-sized first — so the pick that will look
+// balanced against it comes up before the one that dwarfs it.
+//
+// Choosing a partner by hand is the step that most often produces a leaning
+// border, because whether two travels are perpendicular is not something the
+// drawings show.
+func SquarePartners(across Figure, cat []Figure, tol float64) []Figure {
+	var out []Figure
+	for _, f := range cat {
+		if f.SquareTo(across, tol) {
+			out = append(out, f)
+		}
+	}
+	// Ranked by how close the TRAVEL is, not the area.
+	//
+	// Travel is the spacing of a run, so a partner that travels one cell where
+	// the top travels six gives sides six times as dense and a frame that is all
+	// width and no height. Area was the wrong key: a figure can be large and
+	// still barely move.
+	ref := math.Hypot(float64(across.DX), float64(across.DY))
+	span := func(f Figure) float64 { return math.Hypot(float64(f.DX), float64(f.DY)) }
+	sort.Slice(out, func(i, j int) bool {
+		di, dj := math.Abs(span(out[i])-ref), math.Abs(span(out[j])-ref)
+		if di != dj {
+			return di < dj
+		}
+		return out[i].Mod < out[j].Mod
+	})
+	return out
 }

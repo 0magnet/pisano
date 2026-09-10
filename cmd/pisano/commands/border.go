@@ -39,7 +39,7 @@ run can stop against it without leaving a stub hanging in the air.
 
 The gap between a corner and the first piece of a run is one travel vector, so
 a corner much smaller than the run's travel leaves air between them. Pair a
-big-travelling run with a corner of comparable size, or raise --cols/--rows so
+big-traveling run with a corner of comparable size, or raise --cols/--rows so
 the travel is a smaller share of the edge.
 
 --list prints the catalog instead of building anything: every distinct figure,
@@ -52,7 +52,7 @@ alone repeat one drawing hundreds of times.`,
 		Args: cobra.NoArgs,
 	}
 	cmd.Flags().IntVar(&across, "across", 9, "modulus for the top and bottom runs")
-	cmd.Flags().IntVar(&down, "down", 23, "modulus for the side runs")
+	cmd.Flags().IntVar(&down, "down", 0, "modulus for the side runs; 0 picks one square to --across")
 	cmd.Flags().IntVar(&corner, "corner", 37, "modulus for the corners; a closed figure works best")
 	cmd.Flags().IntVar(&cols, "cols", 8, "copies of the across figure between the corners")
 	cmd.Flags().IntVar(&rows, "rows", 3, "copies of the down figure between the corners")
@@ -82,9 +82,25 @@ alone repeat one drawing hundreds of times.`,
 		if err != nil {
 			return err
 		}
-		d, err := pick(down, "down")
-		if err != nil {
-			return err
+		var d border.Figure
+		if down == 0 {
+			// Pick a partner whose travel is a quarter turn from the across
+			// figure.s. Getting this wrong is the usual way to end up with a
+			// parallelogram, and the drawings give no hint of it.
+			cands := border.SquarePartners(a, border.Catalog(3, maxMod), 1)
+			if len(cands) == 0 {
+				return fmt.Errorf("no figure below modulus %d runs square to mod %d; try another --across", maxMod, across)
+			}
+			d = cands[0]
+			fmt.Fprintf(cc.ErrOrStderr(), //nolint:errcheck // a note, not output
+				"picked mod %d for the sides: %dx%d, travel %+d,%+d, square to mod %d\n",
+				d.Mod, d.W(), d.H(), d.DX, d.DY, across)
+		} else {
+			var err error
+			d, err = pick(down, "down")
+			if err != nil {
+				return err
+			}
 		}
 		c, err := pick(corner, "corner")
 		if err != nil {
@@ -112,7 +128,7 @@ alone repeat one drawing hundreds of times.`,
 		}
 		frag := l.HTML(border.HTMLOptions{
 			FontPx: font, FitW: fitW, FitH: fitH,
-			Color: "#3d8fb8", Corner: "#7fd6a0",
+			Color: "#3d8fb8",
 		})
 		page := border.Page(fmt.Sprintf("pisano border %d/%d/%d", across, down, corner), frag)
 		if out == "" {

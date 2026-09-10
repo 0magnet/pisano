@@ -136,87 +136,31 @@ func (l Layout) Bounds() (minX, minY, maxX, maxY int) {
 	return
 }
 
-// Grid draws an UPRIGHT layout into one grid, ready to print.
+// Grid composes the whole border into one grid, in lattice space, and joins it
+// into a single line.
 //
-// It threads a rule round the frame and spurs every loose end onto it. Without
-// that the pieces are a scatter: figures whose path never reaches the edge of
-// their own box — which is most of them — cannot touch however they are
-// arranged, so the joining line has to be drawn. Components() on the result
-// says whether it worked.
+// This is the drawing; the layout's rotation is only how it is presented. So
+// connectivity is settled here, once, for both renderers — an angled border is
+// this same grid turned, and turning cannot break a line.
+//
+// The runs need no help: consecutive copies sit one travel apart, which is
+// exactly the offset that lands one copy's path end on the next one's start.
+// What needs joining is the corners, where a closed figure has no loose end to
+// offer.
 func (l Layout) Grid() Grid {
-	minX, minY, maxX, maxY := l.Bounds()
-	g := BlankGrid(maxX-minX, maxY-minY)
-	for _, p := range l.Places {
-		g.Stamp(p.Grid, p.GX-minX, p.GY-minY)
-	}
-	// The rule runs through the middle of each edge band.
-	top, bottom := l.edgeRow(RoleAcross, minY, false), l.edgeRow(RoleAcross, minY, true)
-	left, right := l.edgeCol(RoleDown, minX, false), l.edgeCol(RoleDown, minX, true)
-	g.RuleH(left, right+1, top)
-	g.RuleH(left, right+1, bottom)
-	g.RuleV(top, bottom+1, left)
-	g.RuleV(top, bottom+1, right)
-	// Then every loose end is tied to the nearest rule, so the whole thing is
-	// one line rather than a rule with ornaments floating beside it.
-	for _, p := range l.Places {
-		for _, s := range p.Grid.Stubs() {
-			r, c := p.GY-minY+s[0], p.GX-minX+s[1]
-			if nearer(r, top, bottom) == top {
-				spurV(g, r, c, top)
-			} else {
-				spurV(g, r, c, bottom)
-			}
-		}
-	}
+	g, _ := l.GridJoins()
 	return g
 }
 
-func nearer(v, a, b int) int {
-	if abs(v-a) <= abs(v-b) {
-		return a
-	}
-	return b
-}
-
-func spurV(g Grid, r, c, target int) {
-	lo, hi := r, target
-	if hi < lo {
-		lo, hi = hi, lo
-	}
-	g.RuleV(lo, hi+1, c)
-}
-
-// edgeRow / edgeCol find the middle of the band a run occupies.
-func (l Layout) edgeRow(role Role, minY int, last bool) int {
-	best := math.MaxInt32
-	if last {
-		best = math.MinInt32
-	}
+// GridJoins is Grid, also reporting how many connectors had to be drawn. Zero
+// means the figures met on their own.
+func (l Layout) GridJoins() (Grid, int) {
+	minX, minY, maxX, maxY := l.Bounds()
+	// A margin, so a connector that wants to step outside the pieces has room.
+	const pad = 2
+	g := BlankGrid(maxX-minX+2*pad, maxY-minY+2*pad)
 	for _, p := range l.Places {
-		if p.Role != role && p.Role != RoleCorner {
-			continue
-		}
-		v := p.GY - minY + p.Grid.H()/2
-		if (!last && v < best) || (last && v > best) {
-			best = v
-		}
+		g.Stamp(p.Grid, p.GX-minX+pad, p.GY-minY+pad)
 	}
-	return best
-}
-
-func (l Layout) edgeCol(role Role, minX int, last bool) int {
-	best := math.MaxInt32
-	if last {
-		best = math.MinInt32
-	}
-	for _, p := range l.Places {
-		if p.Role != role && p.Role != RoleCorner {
-			continue
-		}
-		v := p.GX - minX + p.Grid.W()/2
-		if (!last && v < best) || (last && v > best) {
-			best = v
-		}
-	}
-	return best
+	return g, g.Join()
 }

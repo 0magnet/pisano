@@ -1,6 +1,7 @@
 package border
 
 import (
+	"html"
 	"math"
 	"strings"
 	"testing"
@@ -40,9 +41,10 @@ func TestRotatedExtentGrowsWithTheTurn(t *testing.T) {
 	}
 }
 
-// The fragment must carry one rotation for every piece and put each at its own
-// lattice point — a shared angle with per-piece origins is the bug this guards.
-func TestHTMLUsesOneRotationAndLatticePositions(t *testing.T) {
+// The fragment is ONE turned element carrying the joined grid. That is the
+// contract: what is rendered is what Components() counted, and there is nothing
+// to hold in phase because there is only one thing.
+func TestHTMLIsOneTurnedGrid(t *testing.T) {
 	f9, _ := Of(9)
 	f23, _ := Of(23)
 	f37, _ := Of(37)
@@ -50,18 +52,22 @@ func TestHTMLUsesOneRotationAndLatticePositions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	frag := l.HTML(HTMLOptions{FitW: 600, FitH: 300, Color: "#3d8fb8", Corner: "#7fd6a0"})
-	if n := strings.Count(frag, "<pre"); n != len(l.Places) {
-		t.Errorf("fragment has %d pieces, layout has %d", n, len(l.Places))
+	frag := l.HTML(HTMLOptions{FitW: 600, FitH: 300, Color: "#3d8fb8"})
+	if n := strings.Count(frag, "<pre"); n != 1 {
+		t.Errorf("fragment has %d elements, want exactly 1", n)
 	}
-	if n := strings.Count(frag, "transform-origin:0 0"); n != len(l.Places) {
-		t.Error("every piece must rotate about its top-left, which is its grid origin")
+	if !strings.Contains(frag, "rotate(135.0000deg)") {
+		t.Error("the layout rotation is not on the element")
 	}
-	turn := strings.Count(frag, "rotate(135.0000deg)")
-	if turn != len(l.Places) {
-		t.Errorf("%d pieces carry the layout rotation, want all %d", turn, len(l.Places))
+	if !strings.Contains(frag, "transform-origin:0 0") {
+		t.Error("the element must turn about its origin")
 	}
-	if !strings.Contains(frag, "#7fd6a0") {
-		t.Error("corner color was not applied")
+	// The drawing in the fragment must BE the joined grid, not the raw pieces.
+	g := l.Grid()
+	if g.Components() != 1 {
+		t.Fatalf("the grid itself is %d pieces", g.Components())
+	}
+	if !strings.Contains(frag, html.EscapeString(g.String())) {
+		t.Error("the fragment does not carry the joined grid")
 	}
 }
