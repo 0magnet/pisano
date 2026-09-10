@@ -275,3 +275,58 @@ func TestInsetMovesTheCutByCells(t *testing.T) {
 		t.Errorf("inset of %d cells moved the run %d columns, want %d", step, cs-c0, step)
 	}
 }
+
+// Both ends of every run must land on a zero crossing of the run's own wave.
+//
+// A run figure is a line that wanders, swinging once to each side over its
+// period, so it has a peak, a trough, and a crossing between them. Cut at a
+// peak or a trough and half an ornament hangs at the corner; cut at a crossing
+// and a whole one faces it.
+func TestRunsAreCutAtZeroCrossings(t *testing.T) {
+	d, ok := OfPasses(13, 1)
+	if !ok {
+		t.Fatal("no figure for modulus 13")
+	}
+	c, ok := OfPasses(31, 4)
+	if !ok {
+		t.Fatal("no figure for modulus 31 at four passes")
+	}
+	across := d.RotateCW()
+	for _, f := range []Figure{across, d} {
+		sign := waveSign(f)
+		if len(sign) == 0 {
+			t.Fatalf("modulus %d traveling %+d,%+d has no readable wave",
+				f.Mod, f.DX, f.DY)
+		}
+		lo, hi, ok := crossings(f)
+		if !ok {
+			t.Fatalf("modulus %d: no zero crossing found in wave %v", f.Mod, sign)
+		}
+		n := len(sign)
+		at := func(i int) int { return sign[((i%n)+n)%n] }
+		if at(lo-1) == at(lo) {
+			t.Errorf("modulus %d: the near cut at step %d is not a crossing, wave %v",
+				f.Mod, lo, sign)
+		}
+		if at(hi+1) == at(hi) {
+			t.Errorf("modulus %d: the far cut at step %d is not a crossing, wave %v",
+				f.Mod, hi, sign)
+		}
+		// And on the same swing, or the fix moves the fault instead of curing
+		// it: a whole trough against one corner and half a peak against the
+		// other.
+		if at(lo) != at(hi) {
+			t.Errorf("modulus %d: the two cuts are on opposite swings, %d and %d in %v",
+				f.Mod, at(lo), at(hi), sign)
+		}
+	}
+	// And the frame still composes clean.
+	l, err := Compose(Spec{Across: across, Down: d, Corner: c, Cols: 12, Rows: 5})
+	if err != nil {
+		t.Fatal(err)
+	}
+	g, joins := l.GridJoins()
+	if joins != 0 || g.Components() != 1 {
+		t.Errorf("%d connectors and %d pieces, want 0 and 1", joins, g.Components())
+	}
+}

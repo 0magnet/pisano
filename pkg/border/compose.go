@@ -15,20 +15,17 @@ type Spec struct {
 	Cols   int    // copies of Across between the corners
 	Rows   int    // copies of Down between the corners
 	Bias   Bias   // which side of a corner's middle the runs meet it on
-	// Inset holds the runs back from the corners, in CELLS.
+	// Inset holds the runs further back from the corners, in cells, on top of
+	// where they would be cut anyway.
 	//
-	// The cut lands where a corner's box ends, which is wherever that happens
-	// to fall in the run's repeat: a figure is usually wider than it travels,
-	// so the copy nearest a corner is sliced through its motif and shows half
-	// an ornament. Which half is what this chooses.
+	// Zero does not mean the cut falls where the corner's box happens to end.
+	// A run is read as a wave and cut at a zero crossing of it — see waveSign —
+	// so zero already means the best cut, and this is for overruling that.
 	//
-	// Cells rather than travel steps, and the difference matters. A run is
-	// periodic, so insetting by a whole step moves the cut a whole period and
-	// leaves it in exactly the same place in the motif — the same edge, further
-	// from the corner. Only a partial step changes which part of the motif ends
-	// up facing the corner, which is the thing worth choosing.
-	//
-	// Negative lets the runs reach further in instead.
+	// Cells rather than travel steps. A run is periodic, so moving a cut by a
+	// whole step leaves it in exactly the same place in the motif: the same
+	// edge, further from the corner. Only a partial step changes what faces the
+	// corner. Negative lets the runs reach further in.
 	Inset int
 	// Detached leaves the runs and the corners as separate pieces: no segment
 	// is drawn from a corner out to the run that stops at it, and no connector
@@ -320,8 +317,18 @@ func (l Layout) GridJoins() (Grid, int) {
 	// side of the frame as well.
 	ua := unit(l.Spec.Across.DX, l.Spec.Across.DY)
 	ud := unit(l.Spec.Down.DX, l.Spec.Down.DY)
-	// How far past its box each corner holds the runs off, in cells.
-	back := float64(l.Spec.Inset)
+	// How far past its box each corner holds the runs off, in cells: the
+	// automatic alignment to a zero crossing of the run's wave, plus whatever
+	// Inset asks for on top.
+	//
+	// The two ends of a run must be phased SEPARATELY. They travel through the
+	// period in opposite directions — hold both ends back by one step and the
+	// near cut moves one way through the wave while the far cut moves the other
+	// — so a single offset that puts a whole trough against the left corner
+	// puts half a peak against the right one, which is moving the fault rather
+	// than curing it.
+	aLow, aHigh := endPhases(l.Spec.Across)
+	dLow, dHigh := endPhases(l.Spec.Down)
 	var aSpans, dSpans [][2]float64
 	for _, p := range l.Places {
 		if p.Role != RoleCorner {
@@ -329,9 +336,15 @@ func (l Layout) GridJoins() (Grid, int) {
 		}
 		ox, oy := p.GX-minX+pad, p.GY-minY+pad
 		g.Stamp(p.Grid, ox, oy)
-		aSpans = append(aSpans, grow(boxSpan(ox, oy, p.Grid.W(), p.Grid.H(), ua), back))
-		dSpans = append(dSpans, grow(boxSpan(ox, oy, p.Grid.W(), p.Grid.H(), ud), back))
+		aSpans = append(aSpans, boxSpan(ox, oy, p.Grid.W(), p.Grid.H(), ua))
+		dSpans = append(dSpans, boxSpan(ox, oy, p.Grid.W(), p.Grid.H(), ud))
 	}
+	// The run's own origin in this grid, which is what the phases are counted
+	// from: lattice zero is where the first copy of each run was laid.
+	originA := float64(-minX+pad)*ua[0] + float64(-minY+pad)*ua[1]
+	originD := float64(-minX+pad)*ud[0] + float64(-minY+pad)*ud[1]
+	phaseSpans(aSpans, originA, phaseOf(l.Spec.Across), aLow, aHigh, l.Spec.Inset)
+	phaseSpans(dSpans, originD, phaseOf(l.Spec.Down), dLow, dHigh, l.Spec.Inset)
 	for _, p := range l.Places {
 		if p.Role == RoleCorner {
 			continue
@@ -589,7 +602,177 @@ func smallestPiece(ps []Placement) int {
 	return best
 }
 
-// grow widens a span by n cells at each end, or narrows it when n is negative.
-func grow(s [2]float64, n float64) [2]float64 {
-	return [2]float64{s[0] - n, s[1] + n}
+// waveSign reads the run as a wave and reports, for each step of one period,
+// which side of its own center line the stripe is sitting on: -1 above, +1
+// below, 0 on it.
+//
+// A run figure is not a line, it is a line that wanders, and over one period it
+// swings once to each side. The extremes are a peak and a trough and between
+// them the stripe crosses its axis, exactly as a wave does. Cutting a run at a
+// peak or a trough leaves half an ornament hanging at the corner; cutting at a
+// crossing leaves a whole one.
+//
+// Only for a run traveling along a grid axis. On a diagonal the period is not
+// a whole number of columns and the swing is not measured in rows, and a frame
+// with diagonal runs is not one a terminal can print anyway.
+func waveSign(f Figure) []int {
+	horizontal := f.DY == 0 && f.DX != 0
+	vertical := f.DX == 0 && f.DY != 0
+	if !horizontal && !vertical {
+		return nil
+	}
+	t := abs(f.DX)
+	if vertical {
+		t = abs(f.DY)
+	}
+	if t == 0 {
+		return nil
+	}
+	// Several periods of the stripe, read in the MIDDLE. A figure is wider than
+	// it travels — modulus 13 turned once is six cells across a travel of four
+	// — so consecutive copies overlap and every column carries ink from two of
+	// them. Reading one copy on its own gets the wave wrong at both edges,
+	// which is exactly where the answer is wanted.
+	const copies = 5
+	span := copies*t + max(f.W(), f.H())
+	lo := make([]int, span)
+	hi := make([]int, span)
+	for i := range lo {
+		lo[i], hi[i] = 1<<30, -(1 << 30)
+	}
+	for k := range copies {
+		for r := range f.Grid {
+			for c := range f.Grid[r] {
+				if a, ok := Arms(f.Grid[r][c]); !ok || a == 0 {
+					continue
+				}
+				along, across := c, r
+				if vertical {
+					along, across = r, c
+				}
+				i := k*t + along
+				lo[i], hi[i] = min(lo[i], across), max(hi[i], across)
+			}
+		}
+	}
+	ax, ay := f.Axis()
+	axis := ay
+	if vertical {
+		axis = ax
+	}
+	// The middle period, where every column has its full complement of copies.
+	base := (copies / 2) * t
+	sign := make([]int, t)
+	for step := range t {
+		i := base + step
+		if hi[i] < lo[i] {
+			continue
+		}
+		switch off := float64(lo[i]+hi[i])/2 - axis; {
+		case off < -0.25:
+			sign[step] = -1
+		case off > 0.25:
+			sign[step] = 1
+		}
+	}
+	return sign
+}
+
+// crossings is where along its period a run should be cut at each end so that
+// both cuts land on a zero crossing of that wave, and on the SAME swing.
+//
+// Same swing is the half that stops the fix from moving the fault rather than
+// curing it. The two cuts travel in opposite directions through the period —
+// holding both ends back by one step moves the near cut one way through the
+// wave and the far cut the other — so a single offset that puts a whole trough
+// against the left corner puts half a peak against the right one. They need
+// choosing separately, and matched.
+func crossings(f Figure) (low, high int, ok bool) {
+	sign := waveSign(f)
+	t := len(sign)
+	if t == 0 {
+		return 0, 0, false
+	}
+	at := func(i int) int { return sign[((i%t)+t)%t] }
+	for l := range t {
+		// A crossing at the near end: the step before the cut is on the other
+		// side of the line from the first step kept.
+		if at(l-1) == at(l) || at(l) == 0 {
+			continue
+		}
+		for h := range t {
+			// And at the far end: the last step kept, with the next one over.
+			if at(h+1) == at(h) || at(h) != at(l) {
+				continue
+			}
+			return l, h, true
+		}
+	}
+	return 0, 0, false
+}
+
+// phaseOf is a run's period in cells, or zero if it has none worth counting.
+func phaseOf(f Figure) int {
+	if f.DY == 0 && f.DX != 0 {
+		return abs(f.DX)
+	}
+	if f.DX == 0 && f.DY != 0 {
+		return abs(f.DY)
+	}
+	return 0
+}
+
+// endPhases is where in its period a run should be cut at each end: the zero
+// crossings, or step zero for a run whose wave cannot be read.
+func endPhases(f Figure) (low, high int) {
+	if phaseOf(f) == 0 {
+		return 0, 0
+	}
+	l, h, ok := crossings(f)
+	if !ok {
+		return 0, 0
+	}
+	return l, h
+}
+
+// phaseSpans pushes each corner's blocking span out to the next cut landing on
+// the wanted phase, and then by Inset on top.
+//
+// Aligning wraps within the period and Inset does not, which is the whole
+// reason they are two steps: a whole period of Inset has to move the run a
+// whole period, not wrap round and do nothing.
+//
+// Which end a corner is depends on where it sits along the run, so the spans
+// are sorted rather than assumed: the two nearest the run's start take the near
+// phase and the two beyond it the far one.
+func phaseSpans(spans [][2]float64, origin float64, period, low, high, inset int) {
+	if len(spans) == 0 {
+		return
+	}
+	if period <= 0 {
+		// No wave to align to, so Inset is all there is.
+		for i := range spans {
+			spans[i][0] -= float64(inset)
+			spans[i][1] += float64(inset)
+		}
+		return
+	}
+	mid := 0.0
+	for _, s := range spans {
+		mid += (s[0] + s[1]) / 2
+	}
+	mid /= float64(len(spans))
+	wrap := func(v int) int { return ((v % period) + period) % period }
+	for i, s := range spans {
+		if (s[0]+s[1])/2 < mid {
+			// The run starts beyond this corner: the first cell it keeps is
+			// the one after the span, and that is what has to be in phase.
+			first := int(math.Floor(s[1])) + 1
+			spans[i][1] += float64(wrap(low-(first-int(origin))) + inset)
+			continue
+		}
+		// The run ends before this one, so it is the last cell kept.
+		last := int(math.Ceil(s[0])) - 1
+		spans[i][0] -= float64(wrap((last-int(origin))-high) + inset)
+	}
 }
