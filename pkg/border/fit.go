@@ -66,7 +66,7 @@ func Frame(across, down, corner Figure, lines []string, pad int) (Grid, error) {
 }
 
 // FitBox is the largest frame that fits inside a box of the given size in
-// characters, and whether one does at all.
+// characters, with the layout that made it, and whether one fits at all.
 //
 // The call a decorator makes: it has a box on a page, measured in character
 // cells, and wants a frame drawn to fill it. Frame is the other way round — it
@@ -83,7 +83,7 @@ func Frame(across, down, corner Figure, lines []string, pad int) (Grid, error) {
 // every trial composition lays out every piece of the frame. Growing one copy
 // at a time would be a hundred of them for a wide box; even a dozen ran tinygo
 // out of memory on a page with sixty-nine boxes.
-func FitBox(across, down, corner Figure, cols, rows int) (Grid, bool) {
+func FitBox(across, down, corner Figure, cols, rows int) (Layout, Grid, bool) {
 	size := func(c, r int) (w, h int, ok bool) {
 		l, err := Compose(Spec{Across: across, Down: down, Corner: corner, Cols: c, Rows: r})
 		if err != nil {
@@ -96,11 +96,11 @@ func FitBox(across, down, corner Figure, cols, rows int) (Grid, bool) {
 	}
 	w1, h1, ok := size(1, 1)
 	if !ok {
-		return nil, false
+		return Layout{}, nil, false
 	}
 	w2, h2, ok := size(2, 2)
 	if !ok {
-		return nil, false
+		return Layout{}, nil, false
 	}
 	// Exactly linear, so two probes are the whole calculation. Each extra copy
 	// advances the frame by one travel and nothing else moves, which is what
@@ -117,29 +117,32 @@ func FitBox(across, down, corner Figure, cols, rows int) (Grid, bool) {
 	r := pick(rows, h1, h2-h1)
 	w, h, ok := size(c, r)
 	if !ok {
-		return nil, false
+		return Layout{}, nil, false
 	}
 	// One step back apiece, in case the division rounded the wrong way.
 	for w > cols && c > 1 {
 		c--
 		w, h, ok = size(c, r)
 		if !ok {
-			return nil, false
+			return Layout{}, nil, false
 		}
 	}
 	for h > rows && r > 1 {
 		r--
 		w, h, ok = size(c, r)
 		if !ok {
-			return nil, false
+			return Layout{}, nil, false
 		}
 	}
 	if w > cols || h > rows {
-		return nil, false
+		return Layout{}, nil, false
 	}
 	l, err := Compose(Spec{Across: across, Down: down, Corner: corner, Cols: c, Rows: r})
 	if err != nil {
-		return nil, false
+		return Layout{}, nil, false
 	}
-	return l.Grid(), true
+	// The layout comes back too, because a caller that wants the frame colored
+	// needs it: a tint is per COPY of a run, and only the layout knows which
+	// copy a cell came from.
+	return l, l.Grid(), true
 }

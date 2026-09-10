@@ -71,6 +71,11 @@ type Placement struct {
 	Grid   Grid
 	GX, GY int
 	Role   Role
+	// Seq is which copy of its run this is, counted from the corner the run
+	// starts at. It is what a color means: pisano tints a figure by the PASS
+	// that laid a step down, one solid color per pass stepping through the
+	// palette, and a copy of a run figure is exactly a pass.
+	Seq int
 	// MeetX, MeetY are where a corner expects its runs to arrive, in the
 	// piece's own cells. GridJoins needs them to draw the short segment from
 	// the corner's outermost mark out to the run waiting beyond it; they are
@@ -115,8 +120,8 @@ func Compose(s Spec) (Layout, error) {
 		DownAngle: down * 180 / math.Pi,
 		Spec:      s,
 	}
-	add := func(g Grid, gx, gy int, r Role) {
-		l.Places = append(l.Places, Placement{Grid: g, GX: gx, GY: gy, Role: r})
+	add := func(g Grid, gx, gy, seq int, r Role) {
+		l.Places = append(l.Places, Placement{Grid: g, GX: gx, GY: gy, Seq: seq, Role: r})
 	}
 	ax, ay := s.Across.DX, s.Across.DY
 	dx, dy := s.Down.DX, s.Down.DY
@@ -216,20 +221,20 @@ func Compose(s Spec) (Layout, error) {
 		acrossFar, downFar = s.Across.Grid.MirrorV(), s.Down.Grid.MirrorH()
 	}
 	for k := 0; k < s.Cols; k++ {
-		add(s.Across.Grid, k*ax, k*ay, RoleAcross)
+		add(s.Across.Grid, k*ax, k*ay, k, RoleAcross)
 		if square {
-			add(acrossFar, k*ax, twoCY-k*ay-(s.Across.H()-1), RoleAcross)
+			add(acrossFar, k*ax, twoCY-k*ay-(s.Across.H()-1), k, RoleAcross)
 			continue
 		}
-		add(s.Across.Grid, k*ax+s.Rows*dx, k*ay+s.Rows*dy, RoleAcross)
+		add(s.Across.Grid, k*ax+s.Rows*dx, k*ay+s.Rows*dy, k, RoleAcross)
 	}
 	for m := 0; m < s.Rows; m++ {
-		add(s.Down.Grid, m*dx, m*dy, RoleDown)
+		add(s.Down.Grid, m*dx, m*dy, m, RoleDown)
 		if square {
-			add(downFar, twoCX-m*dx-(s.Down.W()-1), m*dy, RoleDown)
+			add(downFar, twoCX-m*dx-(s.Down.W()-1), m*dy, m, RoleDown)
 			continue
 		}
-		add(s.Down.Grid, s.Cols*ax+m*dx, s.Cols*ay+m*dy, RoleDown)
+		add(s.Down.Grid, s.Cols*ax+m*dx, s.Cols*ay+m*dy, m, RoleDown)
 	}
 	return l, nil
 }

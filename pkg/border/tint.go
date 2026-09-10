@@ -32,13 +32,26 @@ import (
 // Tint is a palette index per cell, or -1 where there is no mark.
 type Tint [][]int
 
-// TintAlong walks the grid's largest connected line and colors each cell by how
-// far along it that cell falls, cycling the palette once per circuit.
+// TintByCopy colors each piece of the border by which copy of its run it is,
+// stepping through the palette — which is what pisano does.
 //
-// Cells not on that line — a stray piece Prune left, or a figure the border
-// does not reach — come back -1 rather than being forced into a color, so a
-// caller can see there was something there to explain.
-func (g Grid) TintAlong(colors int) Tint {
+// pisano tints a figure by the PASS that laid a step down: one solid color per
+// pass, stepping through the six. Run `pisano turtle --mod 13 -r12` and that is
+// what comes out — four rows of red, then four of blue, then four of yellow,
+// one motif per color. A copy of a run figure IS a pass, so a border colored
+// this way is the same drawing the terminal makes.
+//
+// It replaces coloring by position along the walked line, which was an attempt
+// to reconstruct pisano's TintAge from a grid that had forgotten the pen. That
+// banded the border in six sweeps and looked nothing like the tool: the bands
+// fell wherever the traversal happened to be, cutting across motifs instead of
+// following them.
+//
+// The four corners share the first color. A corner is one closed figure walked
+// four times, and pisano would give those four passes four colors; that needs
+// per-step data the composition does not keep, and four corners in four colors
+// would read as an accident rather than as a frame.
+func (l Layout) TintByCopy(g Grid, colors int) Tint {
 	if colors < 1 {
 		colors = 1
 	}
@@ -50,81 +63,62 @@ func (g Grid) TintAlong(colors int) Tint {
 			t[i][j] = -1
 		}
 	}
-	lab, n := g.label()
-	if n == 0 {
-		return t
-	}
-	size := make([]int, n)
-	for r := range lab {
-		for _, v := range lab[r] {
-			if v >= 0 {
-				size[v]++
-			}
-		}
-	}
-	best := 0
-	for i, s := range size {
-		if s > size[best] {
-			best = i
-		}
-	}
-	// Walk it in traversal order. Depth first along the line, so consecutive
-	// cells of the border come out consecutive — a breadth-first walk would
-	// spread out from the start in both directions at once and color the two
-	// halves of the frame the same, which is not what going round it looks
-	// like.
-	var start [2]int
-	found := false
-	for r := 0; r < h && !found; r++ {
-		for c := 0; c < w; c++ {
-			if lab[r][c] == best {
-				start, found = [2]int{r, c}, true
-				break
-			}
-		}
-	}
-	if !found {
-		return t
-	}
-	linked := func(r, c, dr, dc int, mine, theirs Arm) bool {
-		r2, c2 := r+dr, c+dc
-		if r2 < 0 || r2 >= h || c2 < 0 || c2 >= w {
+	minX, minY, _, _ := l.Bounds()
+	const pad = 2
+	marked := func(x, y int) bool {
+		if y < 0 || y >= h || x < 0 || x >= w {
 			return false
 		}
-		a, ok1 := Arms(g[r][c])
-		b, ok2 := Arms(g[r2][c2])
-		return ok1 && ok2 && a&mine != 0 && b&theirs != 0
+		a, ok := Arms(g[y][x])
+		return ok && a != 0
 	}
-	seen := make([][]bool, h)
-	for i := range seen {
-		seen[i] = make([]bool, w)
-	}
-	order := make([][2]int, 0, size[best])
-	stack := [][2]int{start}
-	for len(stack) > 0 {
-		p := stack[len(stack)-1]
-		stack = stack[:len(stack)-1]
-		r, c := p[0], p[1]
-		if seen[r][c] {
-			continue
-		}
-		seen[r][c] = true
-		order = append(order, p)
-		if linked(r, c, -1, 0, Up, Down) {
-			stack = append(stack, [2]int{r - 1, c})
-		}
-		if linked(r, c, 1, 0, Down, Up) {
-			stack = append(stack, [2]int{r + 1, c})
-		}
-		if linked(r, c, 0, -1, Left, Right) {
-			stack = append(stack, [2]int{r, c - 1})
-		}
-		if linked(r, c, 0, 1, Right, Left) {
-			stack = append(stack, [2]int{r, c + 1})
+	// In the order GridJoins stamps: corners, then the runs over them. Where
+	// two pieces share a cell the later one wins, which is the same rule the
+	// canvas uses when a path crosses itself.
+	paint := func(want Role) {
+		for _, p := range l.Places {
+			if p.Role != want {
+				continue
+			}
+			idx := 0
+			if p.Role != RoleCorner {
+				idx = ((p.Seq % colors) + colors) % colors
+			}
+			ox, oy := p.GX-minX+pad, p.GY-minY+pad
+			for r := range p.Grid {
+				for c := range p.Grid[r] {
+					if a, ok := Arms(p.Grid[r][c]); !ok || a == 0 {
+						continue
+					}
+					if x, y := ox+c, oy+r; marked(x, y) {
+						t[y][x] = idx
+					}
+				}
+			}
 		}
 	}
-	for i, p := range order {
-		t[p[0]][p[1]] = i * colors / max(1, len(order)) % colors
+	paint(RoleCorner)
+	paint(RoleAcross)
+	paint(RoleDown)
+	// The short segments drawn out of a corner, and anything Join added, belong
+	// to no piece. They take a neighbor's color rather than none, so a join does
+	// not show up as a gap in the coloring.
+	for r := range g {
+		for c := range g[r] {
+			if !marked(c, r) || t[r][c] >= 0 {
+				continue
+			}
+			for _, d := range [4][2]int{{-1, 0}, {1, 0}, {0, -1}, {0, 1}} {
+				y, x := r+d[0], c+d[1]
+				if y >= 0 && y < h && x >= 0 && x < w && t[y][x] >= 0 {
+					t[r][c] = t[y][x]
+					break
+				}
+			}
+			if t[r][c] < 0 {
+				t[r][c] = 0
+			}
+		}
 	}
 	return t
 }

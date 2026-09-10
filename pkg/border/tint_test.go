@@ -6,7 +6,7 @@ import (
 )
 
 // Every marked cell of the border must get a color, and no blank may get one.
-func TestTintAlongColorsTheWholeLine(t *testing.T) {
+func TestTintByCopyColorsTheWholeLine(t *testing.T) {
 	d, ok := OfPasses(13, 1)
 	if !ok {
 		t.Fatal("no figure for modulus 13")
@@ -20,7 +20,7 @@ func TestTintAlongColorsTheWholeLine(t *testing.T) {
 		t.Fatal(err)
 	}
 	g := l.Grid()
-	tin := g.TintAlong(6)
+	tin := l.TintByCopy(g, 6)
 	uncolored, seen := 0, map[int]bool{}
 	for r := range g {
 		for col := range g[r] {
@@ -60,7 +60,7 @@ func TestTintHTMLGroupsRuns(t *testing.T) {
 		t.Fatal(err)
 	}
 	g := l.Grid()
-	out := g.TintHTML(g.TintAlong(6), nil)
+	out := g.TintHTML(l.TintByCopy(g, 6), nil)
 	spans := strings.Count(out, "<span")
 	if spans == 0 {
 		t.Fatal("no spans emitted")
