@@ -421,3 +421,105 @@ func (g Grid) StampClipped(src Grid, x, y int, mask [][]bool, mx, my int) {
 		}
 	}
 }
+
+// Inside is the clear rectangle in the middle of the grid — where whatever the
+// border is around goes.
+//
+// A border is only useful if something can be put in it, and the caller cannot
+// work this out from the Spec: the frame's size falls out of the figures, the
+// runs are woven so their inner edge is ragged rather than straight, and the
+// corners reach further in than the runs do. The only reliable answer is to
+// look at the marks.
+//
+// Grown from the middle, one side at a time, and each side stops for good the
+// first time the strip it would add is not empty. Shrinking the whole grid down
+// instead does not work, and the way it fails is worth recording: the first
+// pass measures rows that lie INSIDE the top and bottom runs, where there is
+// ink all the way to the middle, so the left and right edges are dragged to the
+// center line and the rectangle collapses before the vertical bounds have been
+// found. There is no ordering that fixes that — the rows to measure are the
+// ones inside the answer.
+func (g Grid) Inside() Rect {
+	w, h := g.W(), g.H()
+	if w == 0 || h == 0 {
+		return Rect{}
+	}
+	inked := func(x, y int) bool {
+		if y < 0 || y >= len(g) || x < 0 || x >= len(g[y]) {
+			return false
+		}
+		a, ok := Arms(g[y][x])
+		return ok && a != 0
+	}
+	cx, cy := w/2, h/2
+	if inked(cx, cy) {
+		return Rect{cx, cy, cx, cy}
+	}
+	r := Rect{cx, cy, cx + 1, cy + 1}
+	// Four sides, each with a flag saying whether it can still move. Rotating
+	// between them rather than exhausting one at a time keeps the rectangle
+	// roughly centered, which matters because the caller is going to put
+	// something in the middle of it.
+	open := [4]bool{true, true, true, true}
+	for open[0] || open[1] || open[2] || open[3] {
+		for side := range 4 {
+			if !open[side] {
+				continue
+			}
+			clear := true
+			switch side {
+			case 0: // left
+				for y := r.Y0; y < r.Y1 && clear; y++ {
+					clear = r.X0 > 0 && !inked(r.X0-1, y)
+				}
+			case 1: // right
+				for y := r.Y0; y < r.Y1 && clear; y++ {
+					clear = r.X1 < w && !inked(r.X1, y)
+				}
+			case 2: // top
+				for x := r.X0; x < r.X1 && clear; x++ {
+					clear = r.Y0 > 0 && !inked(x, r.Y0-1)
+				}
+			case 3: // bottom
+				for x := r.X0; x < r.X1 && clear; x++ {
+					clear = r.Y1 < h && !inked(x, r.Y1)
+				}
+			}
+			if !clear {
+				open[side] = false
+				continue
+			}
+			switch side {
+			case 0:
+				r.X0--
+			case 1:
+				r.X1++
+			case 2:
+				r.Y0--
+			case 3:
+				r.Y1++
+			}
+		}
+	}
+	return r
+}
+
+// Overlay writes lines of text into the grid, replacing whatever is there.
+//
+// Replacing, not merging: content laid over a border has to cover it, and the
+// arm algebra that joins two figures would happily weld a table rule to a run.
+// Anything past the edge is dropped rather than wrapped, because a border sized
+// to its content is the caller's problem and silently rewrapping hides it.
+func (g Grid) Overlay(x, y int, lines []string) {
+	for i, line := range lines {
+		r := y + i
+		if r < 0 || r >= len(g) {
+			continue
+		}
+		for j, ch := range []rune(line) {
+			if c := x + j; c >= 0 && c < len(g[r]) {
+				g[r][c] = ch
+			}
+		}
+	}
+}
