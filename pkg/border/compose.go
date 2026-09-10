@@ -205,10 +205,20 @@ func Compose(s Spec) (Layout, error) {
 	// is not one a grid can be reflected in — the far run is then laid down by
 	// translation, as it always was.
 	square := (ax == 0 || ay == 0) && (dx == 0 || dy == 0)
+	// Mirrored once, not once per copy. Every copy of a run reflects to the
+	// same drawing, so building it inside the loop allocates a fresh grid for
+	// each — forty of them for a frame forty copies wide, times every trial
+	// composition a fit takes. Under tinygo that ran the browser out of memory
+	// outright: "out of memory" from runtime.alloc, with the frames coming back
+	// as garbage before they stopped coming back at all.
+	var acrossFar, downFar Grid
+	if square {
+		acrossFar, downFar = s.Across.Grid.MirrorV(), s.Down.Grid.MirrorH()
+	}
 	for k := 0; k < s.Cols; k++ {
 		add(s.Across.Grid, k*ax, k*ay, RoleAcross)
 		if square {
-			add(s.Across.Grid.MirrorV(), k*ax, twoCY-k*ay-(s.Across.H()-1), RoleAcross)
+			add(acrossFar, k*ax, twoCY-k*ay-(s.Across.H()-1), RoleAcross)
 			continue
 		}
 		add(s.Across.Grid, k*ax+s.Rows*dx, k*ay+s.Rows*dy, RoleAcross)
@@ -216,7 +226,7 @@ func Compose(s Spec) (Layout, error) {
 	for m := 0; m < s.Rows; m++ {
 		add(s.Down.Grid, m*dx, m*dy, RoleDown)
 		if square {
-			add(s.Down.Grid.MirrorH(), twoCX-m*dx-(s.Down.W()-1), m*dy, RoleDown)
+			add(downFar, twoCX-m*dx-(s.Down.W()-1), m*dy, RoleDown)
 			continue
 		}
 		add(s.Down.Grid, s.Cols*ax+m*dx, s.Cols*ay+m*dy, RoleDown)

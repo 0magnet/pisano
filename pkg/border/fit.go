@@ -75,11 +75,14 @@ func Frame(across, down, corner Figure, lines []string, pad int) (Grid, error) {
 // lands.
 //
 // Solved rather than searched. A frame's width is linear in the number of
-// across copies, since each copy advances it by exactly one travel, so two
-// compositions give the slope and the intercept and the count falls out; a
-// couple of steps either way then settle the rounding. That matters because
-// this runs per box on every resize, in a browser: growing one copy at a time
-// would be a hundred compositions for a wide box, and this is four.
+// across copies — each advances it by exactly one travel and nothing else
+// moves — so two compositions give the slope and the count falls out, with at
+// most a step back for rounding.
+//
+// That is not a nicety. This runs per box on every resize, in a browser, and
+// every trial composition lays out every piece of the frame. Growing one copy
+// at a time would be a hundred of them for a wide box; even a dozen ran tinygo
+// out of memory on a page with sixty-nine boxes.
 func FitBox(across, down, corner Figure, cols, rows int) (Grid, bool) {
 	size := func(c, r int) (w, h int, ok bool) {
 		l, err := Compose(Spec{Across: across, Down: down, Corner: corner, Cols: c, Rows: r})
@@ -99,39 +102,39 @@ func FitBox(across, down, corner Figure, cols, rows int) (Grid, bool) {
 	if !ok {
 		return nil, false
 	}
-	solve := func(want, at1, at2 int) int {
-		step := at2 - at1
+	// Exactly linear, so two probes are the whole calculation. Each extra copy
+	// advances the frame by one travel and nothing else moves, which is what
+	// makes this arithmetic rather than a search — and the search mattered:
+	// every trial composition lays out every piece, and under tinygo in a
+	// browser a dozen of those per box ran the heap out.
+	pick := func(want, at1, step int) int {
 		if step <= 0 {
 			return 1
 		}
 		return max(1, 1+(want-at1)/step)
 	}
-	c := solve(cols, w1, w2)
-	r := solve(rows, h1, h2)
-	// Two or three steps of settling: the intercept is exact but the rounding
-	// is not, and a frame one copy too wide is worse than one copy too narrow.
-	for range 4 {
-		w, h, ok := size(c, r)
+	c := pick(cols, w1, w2-w1)
+	r := pick(rows, h1, h2-h1)
+	w, h, ok := size(c, r)
+	if !ok {
+		return nil, false
+	}
+	// One step back apiece, in case the division rounded the wrong way.
+	for w > cols && c > 1 {
+		c--
+		w, h, ok = size(c, r)
 		if !ok {
 			return nil, false
 		}
-		grew := false
-		if w > cols && c > 1 {
-			c, grew = c-1, true
-		} else if w2, _, _ := size(c+1, r); w2 <= cols {
-			c, grew = c+1, true
-		}
-		if h > rows && r > 1 {
-			r, grew = r-1, true
-		} else if _, h2, _ := size(c, r+1); h2 <= rows {
-			r, grew = r+1, true
-		}
-		if !grew {
-			break
+	}
+	for h > rows && r > 1 {
+		r--
+		w, h, ok = size(c, r)
+		if !ok {
+			return nil, false
 		}
 	}
-	w, h, ok := size(c, r)
-	if !ok || w > cols || h > rows {
+	if w > cols || h > rows {
 		return nil, false
 	}
 	l, err := Compose(Spec{Across: across, Down: down, Corner: corner, Cols: c, Rows: r})
