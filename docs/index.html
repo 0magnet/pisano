@@ -5,6 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='2' width='10' height='8' rx='1' fill='none' stroke='%238fc6f0' stroke-width='1.4'/%3E%3Crect x='5' y='6' width='10' height='8' rx='1' fill='none' stroke='%23e8825f' stroke-width='1.4'/%3E%3C/svg%3E">
 <title>pisano — designs in one window, drawn in another</title>
+<!-- seo:begin -->
+<meta name="description" content="Designs made by reducing integer sequences modulo m — the Pisano period made visible. Fibonacci and Lucas numbers drawn live in a browser, with a gallery of generated figures.">
+<meta name="author" content="0magnet">
+<link rel="canonical" href="https://pisano.magnetosphere.net/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="magnetosphere">
+<meta property="og:title" content="pisano — Pisano periods, drawn">
+<meta property="og:description" content="Designs made by reducing integer sequences modulo m — the Pisano period made visible. Fibonacci and Lucas numbers drawn live in a browser, with a gallery of generated figures.">
+<meta property="og:url" content="https://pisano.magnetosphere.net/">
+<meta property="og:image" content="https://pisano.magnetosphere.net/pisano-demo.png">
+<meta property="og:image:alt" content="Designs drawn by reducing the Fibonacci sequence modulo m, rendered live in a browser terminal">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="pisano — Pisano periods, drawn">
+<meta name="twitter:description" content="Designs made by reducing integer sequences modulo m — the Pisano period made visible. Fibonacci and Lucas numbers drawn live in a browser, with a gallery of generated figures.">
+<meta name="twitter:image" content="https://pisano.magnetosphere.net/pisano-demo.png">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebApplication","applicationCategory":"EducationalApplication","author":{"@type":"Person","name":"0magnet"},"browserRequirements":"Requires WebAssembly","description":"Designs made by reducing integer sequences modulo m — the Pisano period made visible. Fibonacci and Lucas numbers drawn live in a browser, with a gallery of generated figures.","image":"https://pisano.magnetosphere.net/pisano-demo.png","isAccessibleForFree":true,"name":"pisano — Pisano periods, drawn","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"operatingSystem":"Any (modern web browser)","sameAs":"https://github.com/0magnet/pisano","url":"https://pisano.magnetosphere.net/"}
+</script>
+<!-- seo:end -->
 <style>
   html, body { margin: 0; height: 100%; overflow: hidden;
                background: #10131a; color: #d3d7cf; }
@@ -20,6 +39,14 @@
 </style>
 </head>
 <body>
+<!-- seo:begin -->
+<div style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;">
+<h1>pisano — designs from integer sequences modulo m</h1>
+<p>The Fibonacci sequence taken modulo m repeats, and the length of that repeat is the Pisano period. Plot the residues and the repetition becomes a figure — different for every modulus, symmetric in ways that are not obvious from the arithmetic.</p>
+<p>Two renderers over one core draw Fibonacci, Lucas and related integer sequences under modular arithmetic, live and interactively. Built after Jacob Yatsko&#39;s video A New Way to Look at Fibonacci Numbers, including the questions it raises and leaves open. A gallery of pre-generated figures is at /gallery/.</p>
+<p>Source code: <a href="https://github.com/0magnet/pisano">github.com/0magnet/pisano</a>. More Go and WebAssembly projects: <a href="https://magnetosphere.net/software">magnetosphere.net/software</a>.</p>
+</div>
+<!-- seo:end -->
 <div id="desktop"><div id="boot">loading…</div></div>
 <script src="wasm_exec.js"></script>
 <script>
