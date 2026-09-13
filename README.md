@@ -20,8 +20,16 @@ Cobra CLI and a Bubble Tea v2 viewer; nothing else. Vendored, so it builds offli
 
 ```
 go build .        # -> ./pisano
-go run . gallery
+go run . gallery  # -> the published gallery page; see below
 ```
+
+`gallery` writes the page published at
+**[pisano.magnetosphere.net/gallery/](https://pisano.magnetosphere.net/gallery/)**
+— 332 figures across 19 sections, every one generated rather than drawn, and
+the only part of this site a search engine can read: the rest is a terminal in
+a canvas. Its lead now says what a Pisano period actually is, which a page
+titled for one probably ought to. Regenerating rewrites the whole file, so the
+page's search metadata has to be reapplied afterwards.
 
 ## What it draws
 
