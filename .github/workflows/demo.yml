@@ -46,7 +46,7 @@ jobs:
       # reproducible rather than depending on whatever the runner ships.
       - uses: actions/setup-go@v6
         with:
-          go-version: '1.26.5'
+          go-version: '1.26.8'
           cache: false
 
       - uses: acifani/setup-tinygo@v3
