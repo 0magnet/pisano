@@ -6,9 +6,9 @@ require (
 	github.com/0magnet/afero v1.15.1-0.20261003211811-482680d00992
 	github.com/0magnet/desk v0.0.1-0.20261004200012-7ac6a12489c1
 	github.com/0magnet/desk/panes v0.0.1-0.20261004200012-7ac6a12489c1
-	github.com/0magnet/pisano v0.0.0-20261004112647-764f40cafdc3
+	github.com/0magnet/pisano v0.0.0-20261004202314-f7b45ed0918c
 	github.com/0magnet/sh/v3 v3.13.2-0.20261004194540-aa2d6e4a31a5
-	github.com/0magnet/websh v0.0.1-0.20261004183953-6a1b7c7a18ec
+	github.com/0magnet/websh v0.0.1-0.20261004200853-adb76a8fa4c2
 	github.com/charmbracelet/colorprofile v0.4.3
 )
 
