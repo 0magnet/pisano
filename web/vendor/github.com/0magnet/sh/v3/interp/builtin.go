@@ -14,7 +14,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"golang.org/x/term"
@@ -38,7 +37,8 @@ import (
 func IsBuiltin(name string) bool {
 	switch name {
 	case
-		// POSIX Shell builtins, from section 1.d obtained in September 2025 from:
+		// POSIX Shell regular built-ins, that is, the utilities which the shell
+		// must provide as built-ins, from section 1.d obtained in September 2025 from:
 		// https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_09_01_01
 		"alias",
 		"bg",
@@ -90,7 +90,6 @@ func IsBuiltin(name string) bool {
 		"typeset", // NOTE: our parser treats this as a keyword
 		"dirs",
 		"disown",
-		"echo", // TODO: surely this is POSIX? but why is it not in the main POSIX spec page?
 		"enable",
 		"history",
 		"help",
@@ -100,14 +99,20 @@ func IsBuiltin(name string) bool {
 		"mapfile",
 		"readarray",
 		"popd",
-		"printf", // TODO: surely this is POSIX? but why is it not in the main POSIX spec page?
 		"pushd",
 		"shopt",
 		"suspend",
-		"test",
-		"[", // NOTE: an alias for "test", not explicitly listed
 		"type",
-		"ulimit":
+		"ulimit",
+
+		// POSIX utilities which the shell need not provide as built-ins,
+		// so they are separate executables found via PATH, but which we
+		// implement as built-ins just like Bash does. Obtained in September
+		// 2025 from https://pubs.opengroup.org/onlinepubs/9699919799/utilities/contents.html
+		"echo",
+		"printf",
+		"test",
+		"[": // NOTE: an alias for "test", not documented separately
 		return true
 	}
 	return false
@@ -151,6 +156,9 @@ func (r *Runner) builtin(ctx context.Context, pos syntax.Pos, name string, args 
 		exit.code = code
 		return exit
 	}
+	// The builtin and command builtins jump back here to run another builtin,
+	// as recursing could overflow the stack with a long chain of them.
+dispatch:
 	switch name {
 	case ":", "true":
 	case "false":
@@ -178,9 +186,12 @@ func (r *Runner) builtin(ctx context.Context, pos syntax.Pos, name string, args 
 		// is not: the user wants exit.
 		return failf(1, "logout: not login shell: use `exit'\n")
 	case "times":
-		// No per-process CPU accounting on the targets this fork serves
-		// (js/wasm has none at all), so report zeros in bash's format
-		// rather than fail: shell user/sys, then children user/sys.
+		// js/wasm has no per-process CPU accounting at all, so report zeros
+		// in bash's format — shell user/sys, then children user/sys — rather
+		// than fail.
+		// TODO: report real times on platforms that can, via os/exec's
+		// ProcessState or syscall.Getrusage. Not urgent; nothing depends on
+		// the values being non-zero.
 		r.out("0m0.000s 0m0.000s\n0m0.000s 0m0.000s\n")
 	case "umask":
 		symbolic := false
@@ -242,6 +253,9 @@ func (r *Runner) builtin(ctx context.Context, pos syntax.Pos, name string, args 
 		default:
 			return failf(2, "usage: shift [n]\n")
 		}
+		if n < 0 {
+			return failf(1, "shift: %d: shift count out of range\n", n)
+		}
 		if n >= len(r.Params) {
 			r.Params = nil
 		} else {
@@ -266,7 +280,7 @@ func (r *Runner) builtin(ctx context.Context, pos syntax.Pos, name string, args 
 		for _, arg := range args {
 			if name, sub, ok := cutElemSubscript(arg); vars && ok {
 				r.unsetElem(name, sub)
-			} else if vars && r.lookupVar(arg).IsSet() {
+			} else if vars && r.lookupVar(arg).Declared() {
 				r.delVar(arg)
 			} else if _, ok := r.Funcs[arg]; ok && funcs {
 				delete(r.Funcs, arg)
@@ -396,19 +410,41 @@ func (r *Runner) builtin(ctx context.Context, pos syntax.Pos, name string, args 
 					return exitStatus{code: 130}
 				}
 			}
+			// Waiting for a job reaps it, as in bash, so that a later jobs
+			// does not list what has already been accounted for.
+			for _, bg := range r.jobList() {
+				r.reapBgProc(bg)
+			}
 			break
 		}
 		for _, arg := range args {
-			arg, ok := strings.CutPrefix(arg, "g")
-			pid := atoi(arg)
-			if !ok || pid <= 0 || pid > int64(len(r.bgProcs)) {
-				return failf(1, "wait: pid %s is not a child of this shell\n", arg)
+			var bg *bgProc
+			if strings.HasPrefix(arg, "%") {
+				// bash's wait takes a job specification as well as a PID.
+				//
+				// It answers 127 here, as it does for a PID that names no
+				// child; the PID path above answers 1 instead, which is a
+				// divergence that predates job control and has a test of its
+				// own, so it is left alone rather than changed in passing.
+				found, err := r.jobSpec(arg)
+				if err != nil {
+					r.errJobSpec("wait", arg, err)
+					return exitStatus{code: 127}
+				}
+				bg = found
+			} else {
+				found, ok := r.lookupBgProc(arg)
+				if !ok {
+					return failf(1, "wait: pid %s is not a child of this shell\n", arg)
+				}
+				bg = found
 			}
-			bg := r.bgProcs[pid-1]
 			if !bg.await(ctx) {
 				return exitStatus{code: 130}
 			}
-			exit = *bg.exit
+			exit = bg.finalExit()
+			// Waiting for a job reaps it, as in bash.
+			r.reapBgProc(bg)
 		}
 	case "builtin":
 		if len(args) < 1 {
@@ -418,7 +454,8 @@ func (r *Runner) builtin(ctx context.Context, pos syntax.Pos, name string, args 
 			exit.code = 1
 			return exit
 		}
-		exit = r.builtin(ctx, pos, args[0], args[1:])
+		name, args = args[0], args[1:]
+		goto dispatch
 	case "type":
 		anyNotFound := false
 		mode := ""
@@ -510,7 +547,11 @@ func (r *Runner) builtin(ctx context.Context, pos syntax.Pos, name string, args 
 		if err != nil {
 			return failf(1, "eval: %v\n", err)
 		}
+		if !r.enterCall(name, &r.evalDepth) {
+			return r.exit
+		}
 		r.stmts(ctx, file.Stmts)
+		r.evalDepth--
 		exit = r.exit
 	case "source", ".":
 		if len(args) < 1 {
@@ -533,6 +574,10 @@ func (r *Runner) builtin(ctx context.Context, pos syntax.Pos, name string, args 
 		file, err := p.Parse(f, path)
 		if err != nil {
 			return failf(1, "source: %v\n", err)
+		}
+
+		if !r.enterCall(name, &r.callDepth) {
+			return r.exit
 		}
 
 		// Keep the current versions of some fields we might modify.
@@ -560,6 +605,7 @@ func (r *Runner) builtin(ctx context.Context, pos syntax.Pos, name string, args 
 		}
 		r.sourceSetParams = oldSourceSetParams
 		r.inSource = oldInSource
+		r.callDepth--
 
 		exit = r.exit
 		exit.returning = false
@@ -608,13 +654,14 @@ func (r *Runner) builtin(ctx context.Context, pos syntax.Pos, name string, args 
 				return failf(2, "command: invalid option %q\n", flag)
 			}
 		}
-		args := fp.args()
+		args = fp.args()
 		if len(args) == 0 {
 			break
 		}
 		if !show {
 			if IsBuiltin(args[0]) {
-				return r.builtin(ctx, pos, args[0], args[1:])
+				name, args = args[0], args[1:]
+				goto dispatch
 			}
 			r.exec(ctx, pos, args)
 			exit = r.exit
@@ -761,9 +808,14 @@ func (r *Runner) builtin(ctx context.Context, pos syntax.Pos, name string, args 
 
 		var line []byte
 		var err error
+		fd, terminal := -1, false
 		if silent {
-			// Note that on Windows, syscall.Stdin is of type uintptr.
-			line, err = term.ReadPassword(int(syscall.Stdin))
+			fd, terminal = stdinTerminal(r.stdin)
+		}
+		if terminal {
+			// Only a terminal echoes what we read, so it is the only case
+			// where we need to read without echoing.
+			line, err = term.ReadPassword(fd)
 		} else {
 			line, err = r.readLine(ctx, raw)
 		}
@@ -860,6 +912,7 @@ func (r *Runner) builtin(ctx context.Context, pos syntax.Pos, name string, args 
 
 	case "shopt":
 		mode := ""
+		quiet := false
 		posixOpts := false
 		fp := flagParser{remaining: args}
 		for fp.more() {
@@ -868,7 +921,9 @@ func (r *Runner) builtin(ctx context.Context, pos syntax.Pos, name string, args 
 				mode = flag
 			case "-o":
 				posixOpts = true
-			case "-p", "-q":
+			case "-q":
+				quiet = true
+			case "-p":
 				return failf(2, "shopt: unsupported option %q\n", flag)
 			default:
 				return failf(2, "shopt: invalid option %q\n", flag)
@@ -876,6 +931,10 @@ func (r *Runner) builtin(ctx context.Context, pos syntax.Pos, name string, args 
 		}
 		args := fp.args()
 		if len(args) == 0 {
+			if quiet {
+				// Querying with no names is a no-op, like in Bash.
+				break
+			}
 			if posixOpts {
 				for i, opt := range &posixOptsTable {
 					r.printOptLine(opt.name, r.opts[i], true)
@@ -887,6 +946,7 @@ func (r *Runner) builtin(ctx context.Context, pos syntax.Pos, name string, args 
 			}
 			break
 		}
+		allSet := true
 		for _, arg := range args {
 			opt, supported := (*bool)(nil), true
 			if posixOpts {
@@ -905,9 +965,18 @@ func (r *Runner) builtin(ctx context.Context, pos syntax.Pos, name string, args 
 				}
 				*opt = mode == "-s"
 			default: // ""
-				r.printOptLine(arg, *opt, supported)
+				if quiet {
+					// Query the option's current state without printing;
+					// the exit status below is 0 if all are set, 1 otherwise.
+					if !*opt {
+						allSet = false
+					}
+				} else {
+					r.printOptLine(arg, *opt, supported)
+				}
 			}
 		}
+		exit.oneIf(quiet && mode == "" && !allSet)
 		r.updateExpandOpts()
 
 	case "alias":
@@ -1053,8 +1122,7 @@ func (r *Runner) builtin(ctx context.Context, pos syntax.Pos, name string, args 
 			return failf(2, "%s: Only one array name may be specified, %v\n", name, args)
 		}
 
-		var vr expand.Variable
-		vr.Kind = expand.Indexed
+		vr := expand.Variable{Set: true, Kind: expand.Indexed}
 		scanner := bufio.NewScanner(r.stdin)
 		scanner.Split(mapfileSplit(delim[0], dropDelim))
 		for scanner.Scan() {
@@ -1179,7 +1247,9 @@ func absPath(dir, path string) string {
 	if !filepath.IsAbs(path) {
 		path = filepath.Join(dir, path)
 	}
-	return filepath.Clean(path) // TODO: this clean is likely unnecessary
+	// Note that [filepath.Join] cleans its result, but an already absolute
+	// path needs cleaning too, such as turning "/a/../b" into "/b".
+	return filepath.Clean(path)
 }
 
 func (r *Runner) absPath(path string) string {
@@ -1263,6 +1333,10 @@ func (g *getopts) next(optstr string, args []string) (opt rune, optarg string, d
 	}
 
 	opts := arg[1:]
+	if g.runeidx >= len(opts) {
+		// The arguments changed since the last call.
+		g.runeidx = 0
+	}
 	opt = opts[g.runeidx]
 
 	i := strings.IndexRune(optstr, opt)
@@ -1305,4 +1379,25 @@ func (r *Runner) optStatusText(status bool) string {
 		return "on"
 	}
 	return "off"
+}
+
+// umaskSymbolic renders a mask the way `umask -S` does: the permissions that
+// remain, not the ones masked off.
+func umaskSymbolic(mask uint32) string {
+	var b strings.Builder
+	for i, who := range []string{"u", "g", "o"} {
+		if i > 0 {
+			b.WriteByte(',')
+		}
+		b.WriteString(who)
+		b.WriteByte('=')
+		shift := uint(6 - 3*i)
+		bits := (mask >> shift) & 7
+		for j, perm := range []string{"r", "w", "x"} {
+			if bits&(4>>uint(j)) == 0 {
+				b.WriteString(perm)
+			}
+		}
+	}
+	return b.String()
 }

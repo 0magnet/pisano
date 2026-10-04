@@ -5,8 +5,8 @@ Windows over panes, in WebAssembly. A small desktop shell for the browser:
 [websh](https://github.com/0magnet/websh) supplies a shell, and a pane is
 anything that renders into a DOM element.
 
-**[Live demo](https://0magnet.github.io/desk/)** (TinyGo build) ·
-**[standard Go build](https://0magnet.github.io/desk/go/)**
+**[Live demo](https://desk.magnetosphere.net/)** (TinyGo build) ·
+**[standard Go build](https://desk.magnetosphere.net/go/)**
 
 ![desk in the browser](docs/desk-demo.png "a command in the shell opening a viewer window, both stacked in the taskbar")
 
@@ -299,6 +299,14 @@ account, and `--fs` without `--fs-root` is your whole filesystem — which is th
 right default only because `--shell` already implies it, and a fence beside an
 open gate is not a fence. The panel and the menu are what make a collection of windows
 read as a desktop; the rest is refinement on top of those two.
+
+## Related projects
+
+Other approaches to a desktop or UI driven from the browser:
+
+- [Wanix](https://wanix.dev/) — a WebAssembly-native Unix desktop sandbox with Plan 9-style namespaces
+- [godom](https://www.anupshinde.com/why-i-built-godom/) — the opposite design: Go owns a virtual DOM on the server and patches the browser over a WebSocket
+
 ## Dependency Graph
 
 Made with [goda](https://github.com/loov/goda):

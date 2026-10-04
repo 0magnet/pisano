@@ -150,6 +150,10 @@ type Model struct {
 	// too, which is what anyone would expect of a paused viewer.
 	cycleEvery int
 	cycleFor   int
+	// cycleStep is how far cycle() moves the modulus; always at least 1, so a
+	// zero or negative Step cannot leave the viewer stuck on one figure while
+	// claiming to be cycling.
+	cycleStep int
 
 	view    int
 	mode    int
@@ -179,6 +183,14 @@ type Options struct {
 	Circle bool
 	Paused bool
 	Cycle  time.Duration // advance the modulus on its own every so often
+
+	// Step is how far --cycle moves the modulus each time, default 1.
+	//
+	// A step of 2 from an odd modulus visits only odd moduli, which is the
+	// point of it: the turtle path of an even modulus closes on itself, so a
+	// run through every modulus spends half its time on shut boxes that look
+	// much alike, while the open figures are all on the odd ones.
+	Step int
 }
 
 // New builds a viewer.
@@ -229,6 +241,7 @@ func New(opt Options) Model {
 		m.view = viewCircle
 	}
 	m.cycleEvery = int(opt.Cycle / frame)
+	m.cycleStep = max(1, opt.Step)
 	m.reload()
 	return m
 }
@@ -475,7 +488,7 @@ func (m *Model) cycle() {
 	}
 	m.cycleFor = 0
 	m.noMod = false
-	m.mod++
+	m.mod += max(1, m.cycleStep)
 	m.reload()
 }
 

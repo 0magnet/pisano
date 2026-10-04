@@ -1,59 +1,59 @@
-# github.com/0magnet/afero v1.15.1-0.20260816202415-9f9d46a34dcd
-## explicit; go 1.25.0
+# github.com/0magnet/afero v1.15.1-0.20261003211811-482680d00992
+## explicit; go 1.26.0
 github.com/0magnet/afero
 github.com/0magnet/afero/internal/common
 github.com/0magnet/afero/mem
-# github.com/0magnet/bubbletea/v2 v2.0.9-0.20260816230205-5aaf8ac0d36c
-## explicit; go 1.25.0
+# github.com/0magnet/bubbletea/v2 v2.0.9-0.20261004194435-f5a3ab217440
+## explicit; go 1.26.0
 github.com/0magnet/bubbletea/v2
-# github.com/0magnet/calvin v0.0.0-20260907204538-e831a13893a7
-## explicit; go 1.25.0
+# github.com/0magnet/calvin v0.0.0
+## explicit; go 1.26.0
 github.com/0magnet/calvin
 github.com/0magnet/calvin/clihelp
-# github.com/0magnet/coloredcobra v1.0.3
-## explicit; go 1.25.0
-github.com/0magnet/coloredcobra
-# github.com/0magnet/desk v0.0.0-20260907202244-40230f775b1c
+# github.com/0magnet/desk v0.0.1-0.20261004200012-7ac6a12489c1
 ## explicit; go 1.26
 github.com/0magnet/desk
 github.com/0magnet/desk/dom
-# github.com/0magnet/desk/panes v0.0.0-20260907202244-40230f775b1c
-## explicit; go 1.26
+# github.com/0magnet/desk/panes v0.0.1-0.20261004200012-7ac6a12489c1
+## explicit; go 1.26.6
 github.com/0magnet/desk/panes/files
 github.com/0magnet/desk/panes/hostauth
 github.com/0magnet/desk/panes/hostfs
 github.com/0magnet/desk/panes/hostproto
 github.com/0magnet/desk/panes/term
 github.com/0magnet/desk/panes/viewer
-# github.com/0magnet/pisano v0.0.0-20260907202653-0c0202e436fb
-## explicit; go 1.26
+# github.com/0magnet/pisano v0.0.0-20261004112647-764f40cafdc3
+## explicit; go 1.26.0
 github.com/0magnet/pisano/cmd/pisano/commands
+github.com/0magnet/pisano/pkg/border
 github.com/0magnet/pisano/pkg/pisano
 github.com/0magnet/pisano/pkg/tui
-# github.com/0magnet/sh/v3 v3.13.2-0.20260818190530-13d0024da85c
-## explicit; go 1.25.0
+# github.com/0magnet/sh/v3 v3.13.2-0.20261004194540-aa2d6e4a31a5
+## explicit; go 1.26.0
 github.com/0magnet/sh/v3/expand
 github.com/0magnet/sh/v3/fileutil
 github.com/0magnet/sh/v3/internal
+github.com/0magnet/sh/v3/internal/arithm
 github.com/0magnet/sh/v3/interp
 github.com/0magnet/sh/v3/pattern
 github.com/0magnet/sh/v3/syntax
-# github.com/0magnet/u-root v0.16.1-0.20260814161052-156e0b67262b
-## explicit; go 1.25.7
+# github.com/0magnet/u-root v0.16.1-0.20261003214924-44e47b732754
+## explicit; go 1.26.6
 github.com/0magnet/u-root/pkg/ls
-# github.com/0magnet/websh v0.0.0-20260907164820-23f622ba4adb
-## explicit; go 1.25.7
+# github.com/0magnet/websh v0.0.1-0.20261004183953-6a1b7c7a18ec
+## explicit; go 1.26.6
 github.com/0magnet/websh/shell
 github.com/0magnet/websh/shell/browser
+github.com/0magnet/websh/shell/sed
 github.com/0magnet/websh/web
-# github.com/0magnet/winbox-go v0.0.0-20260907164818-1573f12aafdd
+# github.com/0magnet/winbox-go v0.0.0
 ## explicit; go 1.24
 github.com/0magnet/winbox-go
-# github.com/0magnet/xterm-go v0.0.0-20260909230905-494f3085d6ed
+# github.com/0magnet/xterm-go v0.0.1-0.20261004020305-36b45f096b30
 ## explicit; go 1.24
 github.com/0magnet/xterm-go
 github.com/0magnet/xterm-go/vt
-# github.com/benhoyt/goawk v1.31.0
+# github.com/benhoyt/goawk v1.32.0
 ## explicit; go 1.20
 github.com/benhoyt/goawk/internal/ast
 github.com/benhoyt/goawk/internal/compiler
@@ -64,8 +64,8 @@ github.com/benhoyt/goawk/parser
 # github.com/charmbracelet/colorprofile v0.4.3
 ## explicit; go 1.25.0
 github.com/charmbracelet/colorprofile
-# github.com/charmbracelet/ultraviolet v0.0.0-20260906173415-0277a179edd9
-## explicit; go 1.25.0
+# github.com/charmbracelet/ultraviolet v0.0.0-20261001125412-878653296cfd
+## explicit; go 1.26.0
 github.com/charmbracelet/ultraviolet
 # github.com/charmbracelet/x/ansi v0.11.8
 ## explicit; go 1.24.2
@@ -87,31 +87,25 @@ github.com/clipperhouse/displaywidth
 # github.com/clipperhouse/uax29/v2 v2.7.0
 ## explicit; go 1.18
 github.com/clipperhouse/uax29/v2/graphemes
-# github.com/dustin/go-humanize v1.0.1
-## explicit; go 1.16
+# github.com/dustin/go-humanize v1.1.0
+## explicit; go 1.21
 github.com/dustin/go-humanize
-# github.com/fatih/color v1.19.0
-## explicit; go 1.25.0
-github.com/fatih/color
 # github.com/inconshreveable/mousetrap v1.1.0
 ## explicit; go 1.18
 github.com/inconshreveable/mousetrap
 # github.com/itchyny/gojq v0.12.19
 ## explicit; go 1.24.0
 github.com/itchyny/gojq
-# github.com/itchyny/timefmt-go v0.1.8
+# github.com/itchyny/timefmt-go v0.1.9
 ## explicit; go 1.24
 github.com/itchyny/timefmt-go
 # github.com/lucasb-eyer/go-colorful v1.4.1
 ## explicit; go 1.12
 github.com/lucasb-eyer/go-colorful
-# github.com/mattn/go-colorable v0.1.15
-## explicit; go 1.18
-github.com/mattn/go-colorable
 # github.com/mattn/go-isatty v0.0.24
 ## explicit; go 1.20
 github.com/mattn/go-isatty
-# github.com/mattn/go-runewidth v0.0.29
+# github.com/mattn/go-runewidth v0.0.30
 ## explicit; go 1.23
 github.com/mattn/go-runewidth
 # github.com/muesli/cancelreader v0.2.2
@@ -126,22 +120,22 @@ github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.10
 ## explicit; go 1.12
 github.com/spf13/pflag
-# github.com/xo/terminfo v1.0.0
-## explicit; go 1.19
+# github.com/xo/terminfo v1.2.0
+## explicit; go 1.25
 github.com/xo/terminfo
-# golang.org/x/sync v0.22.0
-## explicit; go 1.25.0
+# golang.org/x/sync v0.23.0
+## explicit; go 1.26.0
 golang.org/x/sync/errgroup
-# golang.org/x/sys v0.47.0
-## explicit; go 1.25.0
+# golang.org/x/sys v0.48.0
+## explicit; go 1.26.0
 golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/term v0.45.0
-## explicit; go 1.25.0
+# golang.org/x/term v0.46.0
+## explicit; go 1.26.0
 golang.org/x/term
-# golang.org/x/text v0.41.0
-## explicit; go 1.25.0
+# golang.org/x/text v0.42.0
+## explicit; go 1.26.0
 golang.org/x/text/runes
 golang.org/x/text/transform
 golang.org/x/text/unicode/norm

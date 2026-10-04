@@ -29,9 +29,35 @@ type Shell struct {
 	RawMode func(on bool)
 	// Size, when set, reports the terminal dimensions.
 	Size func() (cols, rows int)
+	// WakeStdin, when set, makes a Read blocked on the terminal's stdin return
+	// with no data. An applet that reads keys on its own goroutine (ssh) calls
+	// it when its session ends on its own, rather than waiting for a key.
+	WakeStdin func()
+
+	// Exec, when set, is offered any command that is not a built-in applet,
+	// before the filesystem is searched. It runs IN THIS PROCESS on the
+	// shell's own goroutine, which is the whole reason it exists: a program
+	// exec'd from the filesystem on js/wasm is a separate wasm instance (see
+	// exec_js.go) and cannot touch the embedder's own state.
+	//
+	// That is what an embedded shell is usually wanted for. A page that runs
+	// websh inside some larger program — an instrument, an editor, a desk —
+	// has one thing the shell cannot otherwise reach: the program it is
+	// embedded in. This is the door to it, and a command reached through it
+	// can be a full-screen one, because RawMode and Size are right here.
+	//
+	// handled false means "I do not know this command", and the shell carries
+	// on to the filesystem and then to "command not found". Applets are tried
+	// FIRST and win a name clash, so an embedder cannot quietly replace cd or
+	// echo with something else.
+	Exec func(ctx context.Context, args []string) (code int, handled bool)
 
 	parser  *syntax.Parser
 	pending strings.Builder // continuation lines of an incomplete input
+	// reportJobs is reportJobsSrc parsed once; see ReportJobs.
+	reportJobs *syntax.File
+	// exited records what Run found before it reset the runner. See Exited.
+	exited bool
 }
 
 // New creates a shell over the given filesystem (nil = fresh in-memory
@@ -167,15 +193,61 @@ func (s *Shell) Run(ctx context.Context, line string) (needMore bool, err error)
 		s.pending.Reset()
 		return false, err
 	}
+	if openHeredoc(file) {
+		return true, nil
+	}
 	s.pending.Reset()
 	err = s.Runner.Run(ctx, file)
-	if s.Runner.Exited() {
+	// Remembered before the reset, because the reset is what erases it.
+	// The runner keeps this only until the next Run, and resetting here
+	// — so the shell stays usable whatever the embedder decides to do
+	// about the exit — clears it at once. A caller that asked the runner
+	// afterwards was always told no, which is why `exit` could not be
+	// acted on from outside.
+	s.exited = s.Runner.Exited()
+	if s.exited {
 		// plain `exit` in the top level shell: reset so the terminal
 		// session keeps working
 		s.Runner.Reset()
 	}
 	return false, err
 }
+
+// reportJobsSrc is what [Shell.ReportJobs] runs. `jobs -n` lists the jobs that
+// finished since the last report, which is what bash prints before a prompt.
+//
+// $? is saved and restored around it because the report is the shell's doing
+// and not the user's: running it must not change the status of the command
+// they last ran, and every builtin sets one. The status is parked in a
+// variable that stays set afterwards, which is the price of driving this from
+// outside the interpreter rather than from its own prompt loop.
+const reportJobsSrc = "__websh_exit_status=$?; jobs -n; (exit $__websh_exit_status)"
+
+// ReportJobs announces the background jobs that have finished since the last
+// call, the way bash does before drawing a prompt. Without it a job that ended
+// is never mentioned at all: nothing in the interpreter reports a job unasked.
+//
+// It is also what keeps the job table bounded, since the interpreter drops a
+// finished job once something has reported it. A session that never called
+// this would accumulate every job it ever backgrounded.
+func (s *Shell) ReportJobs(ctx context.Context) {
+	if s.reportJobs == nil {
+		file, err := s.parser.Parse(strings.NewReader(reportJobsSrc), "websh")
+		if err != nil {
+			return
+		}
+		s.reportJobs = file
+	}
+	// The report is advisory: a failure to list jobs is not the user's
+	// problem and must not interrupt the prompt.
+	_ = s.Runner.Run(ctx, s.reportJobs) //nolint:errcheck
+}
+
+// Exited reports whether the line just run exited the shell — the
+// `exit` builtin, or anything else the interpreter treats that way.
+//
+// Valid until the next Run, like the runner's own flag it stands in for.
+func (s *Shell) Exited() bool { return s.exited }
 
 // resolve makes a path absolute against the interpreter cwd.
 func resolve(ctx context.Context, path string) string {
@@ -250,6 +322,20 @@ func (s *Shell) execHandler(next interp.ExecHandlerFunc) interp.ExecHandlerFunc 
 			}
 			return nil
 		}
+		// The embedder's own commands, in this process. See Shell.Exec.
+		if s.Exec != nil {
+			// With the shell in it, so a full-screen command can find its own
+			// terminal rather than the embedder's memory of one. See shellctx.go.
+			if code, handled := s.Exec(WithShell(ctx, s), args); handled {
+				if code < 0 || code > 255 {
+					code = 1
+				}
+				if code != 0 {
+					return interp.ExitStatus(code)
+				}
+				return nil
+			}
+		}
 		// Not a built-in applet: try to exec it as a program on the
 		// filesystem. On js/wasm this spawns a wasm binary as a child process
 		// via bottle's proc layer (see exec_js.go); elsewhere it is a no-op and
@@ -266,4 +352,18 @@ func (s *Shell) execHandler(next interp.ExecHandlerFunc) interp.ExecHandlerFunc 
 		fprintf(interp.HandlerCtx(ctx).Stderr, "websh: %s: command not found\n", args[0])
 		return interp.ExitStatus(127)
 	}
+}
+
+// openHeredoc reports a heredoc whose closing word has not been typed yet.
+// The parser now ends such a heredoc at EOF instead of reporting the input
+// as incomplete, so the missing ClosePos is what says more lines are coming.
+func openHeredoc(f *syntax.File) bool {
+	open := false
+	syntax.Walk(f, func(n syntax.Node) bool {
+		if r, ok := n.(*syntax.Redirect); ok && (r.Op == syntax.Hdoc || r.Op == syntax.DashHdoc) && !r.ClosePos.IsValid() {
+			open = true
+		}
+		return !open
+	})
+	return open
 }

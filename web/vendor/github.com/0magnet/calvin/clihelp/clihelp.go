@@ -3,9 +3,16 @@
 // coloring, and the two flags that print what the toolchain recorded.
 //
 // It exists because the same help menu was being written out per repo and
-// drifting. pisano carried a pkg/flags that had already lost the coloring and
-// the banner; the skywire tree it was copied from has both. One package that
-// every command calls keeps them the same by construction.
+// drifting. One package that every command calls keeps them the same by
+// construction.
+//
+// The help is rendered directly rather than through cobra's template, and that
+// is not a stylistic choice. A template reaches its data by reflection, and
+// TinyGo does not implement enough of reflect to run one — it panics part way
+// through, taking the shell down with it. Repos here that ship a TinyGo build
+// (chaosrack, dict, pisano, tinygo-stuff, tuiwasm) would have had a --help that
+// killed the terminal. Writing the screen out means one renderer, the same
+// output on every host, and no reflection anywhere. See help.go.
 //
 // Everything it reports comes from runtime/debug.BuildInfo, which the Go
 // toolchain fills in on its own. Nothing here is injected with -ldflags: a
@@ -18,7 +25,6 @@ import (
 	"runtime/debug"
 	"strings"
 
-	cc "github.com/0magnet/coloredcobra"
 	"github.com/spf13/cobra"
 
 	"github.com/0magnet/calvin"
@@ -116,40 +122,39 @@ func BannerWith(name, text string) string {
 	return Banner(name) + "\n\n" + strings.TrimRight(text, "\n")
 }
 
-// Init gives cmd the house style: the banner as its Long, the blue coloring,
-// the shared templates, and the -b/-d flags. Call it on the root command after
-// its subcommands are attached, since the templates are inherited through the
-// parent chain and the flags are only meaningful at the root.
+// Init gives cmd the house style: the banner above whatever Long it already
+// had, the blue coloring, the renderer, and the -b/-d flags. Call it on
+// the root command after its subcommands are attached, since the help func is
+// inherited through the parent chain and the flags are only meaningful at the
+// root.
+//
+// An existing Long is kept as prose under the build lines rather than replaced.
+// A command that has explained itself should not lose that explanation to gain
+// a banner, and every one of these trees had prose worth keeping.
 //
 // usage controls whether the "Usage:" line appears above the command listing.
 func Init(cmd *cobra.Command, name string, usage bool) {
-	cmd.Long = Banner(name)
+	if prose := strings.TrimSpace(cmd.Long); prose != "" {
+		cmd.Long = BannerWith(name, prose)
+	} else {
+		cmd.Long = Banner(name)
+	}
 	InitStyle(cmd, usage)
 	InitFlags(cmd)
 }
 
-// InitStyle applies the templates and coloring without touching Long or the
-// flags. Use it for a subcommand root that already inherits both.
+// InitStyle installs the renderer without touching Long or the flags. Use it
+// for a subcommand root that already inherits both.
+//
+// cobra looks up HelpFunc and UsageFunc through the parent chain, so setting
+// them on the root covers every subcommand.
 func InitStyle(cmd *cobra.Command, usage bool) {
-	if usage {
-		cmd.SetUsageTemplate(helpUsage)
-	} else {
-		cmd.SetUsageTemplate(help)
-		cmd.SetHelpTemplate(helpTemplateNoUsage)
-	}
-	// The templates have to be set before cc.Init, which colorizes whatever
-	// templates the command is holding.
-	cc.Init(&cc.Config{
-		RootCmd:         cmd,
-		Headings:        cc.HiBlue + cc.Bold,
-		Commands:        cc.HiBlue + cc.Bold,
-		CmdShortDescr:   cc.HiBlue,
-		Example:         cc.HiBlue + cc.Italic,
-		ExecName:        cc.HiBlue + cc.Bold,
-		Flags:           cc.HiBlue + cc.Bold,
-		FlagsDescr:      cc.HiBlue,
-		NoExtraNewlines: true,
-		NoBottomNewline: true,
+	cmd.SetHelpFunc(func(c *cobra.Command, _ []string) {
+		writeHelp(c.OutOrStdout(), c, usage)
+	})
+	cmd.SetUsageFunc(func(c *cobra.Command) error {
+		writeUsage(c.OutOrStderr(), c, true)
+		return nil
 	})
 }
 
@@ -165,8 +170,12 @@ func InitFlags(cmd *cobra.Command) {
 		return
 	}
 	var showAll, showVer bool
-	cmd.Flags().BoolVarP(&showAll, "info", "d", false, "print runtime/debug.BuildInfo")
-	cmd.Flags().BoolVarP(&showVer, "bv", "b", false, "print the main module's version")
+	// The shorthands are taken where the command already wanted them — dict
+	// spends -d on --define — and pflag panics on a duplicate rather than
+	// reporting one. The long flag is the contract and the letter a
+	// convenience, so the letter is dropped instead of the command breaking.
+	bindBool(cmd, &showAll, "info", "d", "print runtime/debug.BuildInfo")
+	bindBool(cmd, &showVer, "bv", "b", "print the main module's version")
 
 	// Wrap rather than replace: a command with its own Run keeps it, and one
 	// without still answers the flags.
@@ -191,4 +200,19 @@ func InitFlags(cmd *cobra.Command) {
 		}
 		return c.Help()
 	}
+}
+
+// bindBool registers a bool flag, giving up the shorthand rather than the flag
+// when the command has already spent that letter. pflag panics on a duplicate
+// shorthand, so asking first is the difference between a help menu and a crash
+// at startup.
+func bindBool(cmd *cobra.Command, p *bool, name, short, usage string) {
+	if cmd.Flags().Lookup(name) != nil || cmd.PersistentFlags().Lookup(name) != nil {
+		return // the command defines this itself; leave it alone
+	}
+	if short != "" && (cmd.Flags().ShorthandLookup(short) != nil ||
+		cmd.PersistentFlags().ShorthandLookup(short) != nil) {
+		short = ""
+	}
+	cmd.Flags().BoolVarP(p, name, short, false, usage)
 }

@@ -26,6 +26,7 @@ var tuiCmd = func() *cobra.Command {
 		circle bool
 		paused bool
 		cycle  time.Duration
+		step   int
 	)
 	cmd := &cobra.Command{
 		Use:     "tui",
@@ -62,6 +63,7 @@ same reason.`,
   pisano tui --circle --mod 10
   pisano tui --trail comet --mod 25
   pisano tui --cycle 5s --mod 1
+  pisano tui --cycle 2s --step 2 --mod 9
   pisano tui --cam page --mod 25
   pisano tui --render braille --cam fit --mod 25`,
 		Args: cobra.NoArgs,
@@ -80,6 +82,7 @@ same reason.`,
 	cmd.Flags().BoolVar(&circle, "circle", false, "start on the circular design rather than the turtle path")
 	cmd.Flags().BoolVar(&paused, "paused", false, "start paused")
 	cmd.Flags().DurationVar(&cycle, "cycle", 0, "step to the next modulus this often, e.g. 5s")
+	cmd.Flags().IntVar(&step, "step", 1, "how far --cycle moves the modulus; 2 from an odd start visits only odd moduli")
 
 	cmd.RunE = func(cc *cobra.Command, _ []string) error {
 		h := hostFrom(cc.Context())
@@ -104,6 +107,7 @@ same reason.`,
 			Circle: circle,
 			Paused: paused,
 			Cycle:  cycle,
+			Step:   step,
 		})
 	}
 	return cmd

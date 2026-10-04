@@ -63,10 +63,55 @@ type Options struct {
 	// NoWebGL forces the DOM renderer.
 	NoWebGL bool
 
+	// NoZoom withholds the ctrl-wheel / ctrl-plus / ctrl-0 zoom, which is
+	// otherwise bound on the element the session was given. A page that wants
+	// those gestures to keep zooming the PAGE, or that binds its own because
+	// the terminal it draws is not the element the user is pointing at, sets
+	// this.
+	NoZoom bool
+
 	// AfterCommand runs after each command line finishes, on the shell's
 	// goroutine. It is where a caller flushes the filesystem somewhere
 	// durable, which has to happen after a command rather than during one.
 	AfterCommand func()
+
+	// Exec is the embedder's own commands. Any command line whose first word
+	// is not a built-in applet is offered here before the filesystem is
+	// searched, and it runs in THIS process on the shell's goroutine.
+	//
+	// That is the difference that matters in a page. A program exec'd from
+	// the filesystem on js/wasm is a separate wasm instance and can only talk
+	// back through pipes; a command reached through this one is a Go function
+	// in the program the shell is embedded in, with everything that program
+	// knows in scope. It may be full-screen — the terminal is right here, and
+	// Session sets RawMode and Size on the shell for exactly that.
+	//
+	//
+	// The context carries the shell that dispatched the command, so a
+	// full-screen one can find the terminal it was typed into:
+	// web.SessionForContext(ctx). A page can hold several terminals, and an
+	// embedder that instead remembers the one it built will draw on the wrong
+	// one as soon as it does.
+	//
+	// Report handled false for a command you do not recognize and the shell
+	// carries on as though the hook were not set.
+	Exec func(ctx context.Context, args []string) (code int, handled bool)
+
+	// OnExit runs when the shell exits — the `exit` builtin, or anything
+	// else that makes the interpreter report an exiting shell — on the
+	// shell's goroutine, and no further prompt is written.
+	//
+	// A shell in a page has nowhere to exit TO, so what happens next is
+	// the embedder's to decide: a window closes, a session restarts, a
+	// panel goes back to what it showed before. Without this the exit was
+	// simply unobserved — the interpreter recorded it, the session
+	// swallowed the status as it does any other, and printed the next
+	// prompt, so typing exit appeared to do nothing whatever.
+	//
+	// Nil keeps that: the prompt comes back and the session carries on,
+	// which is the only safe default for an embedder that has not said
+	// what else to do.
+	OnExit func()
 }
 
 // Session is a terminal with a shell attached, mounted on an element.
@@ -88,7 +133,12 @@ type Session struct {
 	cancelRun context.CancelFunc
 	closed    bool
 
+	// zoomFns are the ctrl-wheel / ctrl-plus listeners; see zoom.go.
+	zoomEl  js.Value
+	zoomFns []zoomBinding
+
 	afterCommand func()
+	onExit       func()
 }
 
 // NewSession builds a terminal on el and starts a shell on it.
@@ -116,6 +166,7 @@ func NewSession(el js.Value, opt Options) (*Session, error) {
 		host:         host,
 		lines:        make(chan string, 8),
 		afterCommand: opt.AfterCommand,
+		onExit:       opt.OnExit,
 	}
 
 	o := vt.NewOptions()
@@ -135,6 +186,9 @@ func NewSession(el js.Value, opt Options) (*Session, error) {
 		if err := s.Term.EnableWebGL(); err != nil {
 			js.Global().Get("console").Call("log", "websh: webgl unavailable: "+err.Error())
 		}
+	}
+	if !opt.NoZoom {
+		s.wireZoom(el, s.Term.FontSize())
 	}
 
 	stdinR, stdinW := io.Pipe()
@@ -175,7 +229,15 @@ func NewSession(el js.Value, opt Options) (*Session, error) {
 
 	// Full-screen applets take raw bytes and need the size.
 	sh.RawMode = func(on bool) { s.rawInput = on }
+	sh.Exec = opt.Exec
 	sh.Size = func() (int, int) { return s.Term.Core.Cols(), s.Term.Core.Rows() }
+	// An empty write: the pipe hands it to a pending Read as zero bytes.
+	sh.WakeStdin = func() {
+		select {
+		case s.stdinQ <- []byte{}:
+		default:
+		}
+	}
 
 	s.Term.Core.OnData = s.onData
 
@@ -352,6 +414,20 @@ func (s *Session) run() {
 		if s.afterCommand != nil {
 			s.afterCommand()
 		}
+		// Checked here and nowhere else: the interpreter overwrites this at
+		// every Run, so it means the line just finished and not the shell.
+		if s.onExit != nil && s.Shell.Exited() {
+			s.onExit()
+			return
+		}
+		// bash announces the background jobs that have ended before it draws
+		// a prompt, and nothing in the interpreter reports one unasked, so
+		// without this a job that finished is never mentioned. Not between
+		// the lines of an unfinished statement, where bash also stays quiet,
+		// and not with the line's own context, which was just canceled.
+		if !s.Shell.Pending() {
+			s.Shell.ReportJobs(context.Background())
+		}
 		s.WritePrompt()
 	}
 }
@@ -364,6 +440,7 @@ func (s *Session) Close() {
 	}
 	s.closed = true
 	forgetSession(s)
+	s.releaseZoom()
 	if s.stdinQ != nil {
 		close(s.stdinQ)
 		s.stdinQ = nil
