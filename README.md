@@ -16,7 +16,7 @@ a browser, with a shell to drive it.
   <img alt="Fibonacci circular designs, moduli 1 to 40" src="docs/img/fib-1-40-light.png">
 </picture>
 
-Cobra CLI and a Bubble Tea v2 viewer; nothing else. Vendored, so it builds offline.
+Cobra CLI and a Bubble Tea v2 viewer. The direct dependencies are cobra, pflag, the `0magnet/bubbletea/v2` fork and `0magnet/calvin` (the help screen). Vendored, so it builds offline.
 
 ```
 go build .        # -> ./pisano
@@ -101,7 +101,7 @@ fib mod 10: period 60, 4 zero(s)
 ## Output formats
 
 `--out` picks by extension: `.svg` writes one sheet, `.html` writes a page of
-inline SVG, `-` writes SVG to stdout. `--split DIR` writes one file per figure,
+inline SVG. `circle` defaults to `-`, which writes SVG to stdout; `turtle` defaults to no file and draws in the terminal. `--split DIR` writes one file per figure,
 which is what you want if the designs are going onto a site individually.
 
 The terminal renderer is still there and still pipes to `ansifilter` if you want
@@ -118,6 +118,25 @@ that file carries 100 KB of base64 woff2 — it will not scale, and adjacent row
 show hairline gaps at most sizes. The native SVG has none of those problems and
 is smaller. Use ansifilter when you specifically want the terminal's look;
 use `--out` when you want the drawing.
+
+## Borders
+
+`border` composes a frame from three turtle figures: one running across the top
+and bottom, one down the sides, and a closed one at the corners. Only a figure
+whose path travels (ends somewhere other than where it began) can make a run,
+and the corners are closed so a run can stop against them. `--list all|closed|travel|diagonal`
+prints the catalog of distinct figures instead of building anything.
+
+```
+go run . border --list travel
+go run . border --across 9 --down 23 --corner 37 --cols 9 --rows 3 -o border.html
+```
+
+An upright border can print to the terminal; an angled one needs a turn that a
+character grid cannot do, so it is written as HTML with `-o`. The figure
+choices (`--across`, `--down`, `--corner` and their `-passes` and `-turn`
+flags), spacing (`--cols`, `--rows`, `--inset`, `--detached`) and sizing
+(`--fit`, `--font`) are all in `border --help`.
 
 ## The viewer
 
@@ -157,8 +176,9 @@ go run . turtle --mod 10 --tint heading
 | key | |
 |---|---|
 | `space` | play / pause |
-| `← →` `h l` | modulus down / up (`H L` by ten) |
+| `← →` `h l` | modulus down / up (`H L` or `pgup` `pgdown` by ten) |
 | `↑ ↓` `k j` | speed double / halve |
+| `a` | toggle auto-cycle through the moduli, every 5 seconds |
 | `o` | jump to the next modulus whose path never closes |
 | `t` | trail: whole circuit, long, short, comet |
 | `0` | no modulus at all |
@@ -702,9 +722,11 @@ a cobra tree under `cmd/`, and the actual work in `pkg/`.
 ```
 pisano.go                     package main — wires up styling, calls Execute
 cmd/pisano/commands/          the cobra tree: root, period, circle, turtle,
-                              sweep, tui, gallery, and the Host the commands
-                              ask for a filesystem, a cwd and a terminal
-pkg/flags/                    the help screen, written out rather than templated
+                              sweep, tui, gallery, border, and the Host the
+                              commands ask for a filesystem, a cwd and a terminal
+cmd/axisscan/                 a standalone tool: for each modulus, what a 3D
+                              turtle path does seen down its own axis
+pkg/border/                   turtle figures composed into a border
 pkg/pisano/                   the library — no CLI, no cobra, no bubbletea
 pkg/tui/                      the bubbletea viewer
 web/                          a separate module: the same tree as a websh
@@ -796,15 +818,17 @@ gocloc --not-match-d='(vendor|node_modules|\.git)' .
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-Go                              47            765           1432           6019
-HTML                             6              0              5           4471
-JavaScript                       2            117             82            935
-Markdown                         1            196              0            603
+Go                              64            969           2521           9482
+HTML                             6              0             15           4507
+JavaScript                       2            112             80            930
+Markdown                         1            201              0            633
+Makefile                         1             21             52            111
 YAML                             1              0              7             98
-JSON                             2              0              0             68
-Makefile                         1             14             21             55
-Bourne Shell                     2             13             27             51
+Bourne Shell                     3             22             60             80
+JSON                             1              0              0              8
+XML                              1              0              0              5
+Plain Text                       1              1              0              3
 -------------------------------------------------------------------------------
-TOTAL                           62           1105           1574          12300
+TOTAL                           81           1326           2735          15857
 -------------------------------------------------------------------------------
 ```
