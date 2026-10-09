@@ -1,17 +1,17 @@
 # github.com/0magnet/bubbletea/v2 v2.0.9-0.20261004194435-f5a3ab217440
 ## explicit; go 1.26.0
 github.com/0magnet/bubbletea/v2
-# github.com/0magnet/calvin v0.0.1-0.20261004205601-db77b5906bf6
+# github.com/0magnet/calvin v0.0.1-0.20261008155441-86637b449fe0
 ## explicit; go 1.26.0
 github.com/0magnet/calvin
 github.com/0magnet/calvin/clihelp
 # github.com/charmbracelet/colorprofile v0.4.3
 ## explicit; go 1.25.0
 github.com/charmbracelet/colorprofile
-# github.com/charmbracelet/ultraviolet v0.0.0-20261001125412-878653296cfd
+# github.com/charmbracelet/ultraviolet v0.0.0-20261008173134-6b8d4baf91b4
 ## explicit; go 1.26.0
 github.com/charmbracelet/ultraviolet
-# github.com/charmbracelet/x/ansi v0.11.8
+# github.com/charmbracelet/x/ansi v0.11.9
 ## explicit; go 1.24.2
 github.com/charmbracelet/x/ansi
 github.com/charmbracelet/x/ansi/kitty
