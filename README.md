@@ -722,10 +722,8 @@ a cobra tree under `cmd/`, and the actual work in `pkg/`.
 ```
 pisano.go                     package main — wires up styling, calls Execute
 cmd/pisano/commands/          the cobra tree: root, period, circle, turtle,
-                              sweep, tui, gallery, border, and the Host the
+                              sweep, axisscan, tui, gallery, border, and the Host the
                               commands ask for a filesystem, a cwd and a terminal
-cmd/axisscan/                 a standalone tool: for each modulus, what a 3D
-                              turtle path does seen down its own axis
 pkg/border/                   turtle figures composed into a border
 pkg/pisano/                   the library — no CLI, no cobra, no bubbletea
 pkg/tui/                      the bubbletea viewer

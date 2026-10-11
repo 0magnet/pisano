@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	clihelp.Init(commands.RootCmd, "pisano", true)
+	clihelp.Init(commands.RootCmd, "pisano")
 }
 
 func main() {

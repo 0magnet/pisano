@@ -36,7 +36,7 @@ import (
 func Register() {
 	// The same help styling the terminal binary uses. websh renders ANSI, so
 	// there is no reason for the browser's help to be the plain one.
-	clihelp.Init(commands.RootCmd, "pisano", true)
+	clihelp.Init(commands.RootCmd, "pisano")
 
 	shell.RegisterApplet("pisano", "Pisano period designs (try: pisano tui)",
 		func(ctx context.Context, s *shell.Shell, hc *interp.HandlerContext, args []string) int {

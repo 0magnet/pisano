@@ -9,7 +9,13 @@ require (
 
 require (
 	github.com/0magnet/bubbletea/v2 v2.0.9-0.20261004194435-f5a3ab217440
-	github.com/0magnet/calvin v0.0.1-0.20261010111553-d1d2be37be6a
+	github.com/0magnet/calvin v0.0.1-0.20261011231802-9b916a31f7b1
+)
+
+require (
+	github.com/0magnet/coloredcobra v1.0.4-0.20261011230509-d5385cf44398 // indirect
+	github.com/fatih/color v1.19.0 // indirect
+	github.com/mattn/go-colorable v0.1.16 // indirect
 )
 
 require (

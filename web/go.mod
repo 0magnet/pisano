@@ -6,7 +6,7 @@ require (
 	github.com/0magnet/afero v1.15.1-0.20261003211811-482680d00992
 	github.com/0magnet/desk v0.0.1-0.20261004200012-7ac6a12489c1
 	github.com/0magnet/desk/panes v0.0.1-0.20261004200012-7ac6a12489c1
-	github.com/0magnet/pisano v0.0.0-20261004202314-f7b45ed0918c
+	github.com/0magnet/pisano v0.0.0-20261011000707-c64a4e34f749
 	github.com/0magnet/sh/v3 v3.13.2-0.20261004194540-aa2d6e4a31a5
 	github.com/0magnet/websh v0.0.1-0.20261004200853-adb76a8fa4c2
 	github.com/charmbracelet/colorprofile v0.4.3
@@ -14,7 +14,13 @@ require (
 
 require (
 	github.com/0magnet/bubbletea/v2 v2.0.9-0.20261004194435-f5a3ab217440
-	github.com/0magnet/calvin v0.0.0
+	github.com/0magnet/calvin v0.0.1-0.20261011231802-9b916a31f7b1
+)
+
+require (
+	github.com/0magnet/coloredcobra v1.0.4-0.20261011230509-d5385cf44398 // indirect
+	github.com/fatih/color v1.19.0 // indirect
+	github.com/mattn/go-colorable v0.1.16 // indirect
 )
 
 require (
@@ -22,8 +28,8 @@ require (
 	github.com/0magnet/winbox-go v0.0.0 // indirect
 	github.com/0magnet/xterm-go v0.0.1-0.20261004020305-36b45f096b30 // indirect
 	github.com/benhoyt/goawk v1.32.0 // indirect
-	github.com/charmbracelet/ultraviolet v0.0.0-20261001125412-878653296cfd // indirect
-	github.com/charmbracelet/x/ansi v0.11.8 // indirect
+	github.com/charmbracelet/ultraviolet v0.0.0-20261008173134-6b8d4baf91b4 // indirect
+	github.com/charmbracelet/x/ansi v0.11.9 // indirect
 	github.com/charmbracelet/x/term v0.2.2 // indirect
 	github.com/charmbracelet/x/termios v0.1.1 // indirect
 	github.com/charmbracelet/x/windows v0.2.2 // indirect
@@ -41,14 +47,14 @@ require (
 	// 3m0s, timing out". Nothing here needs what the newer versions added, and
 	// the browser build is not worth losing over it. charmbracelet/x/ansi
 	// follows it down: v0.11.8 is the release that requires the newer one.
-	github.com/mattn/go-runewidth v0.0.30 // indirect
+	github.com/mattn/go-runewidth v0.0.31 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/spf13/cobra v1.10.2 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/xo/terminfo v1.2.0 // indirect
-	golang.org/x/sync v0.23.0 // indirect
-	golang.org/x/sys v0.48.0 // indirect
+	golang.org/x/sync v0.24.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/term v0.46.0 // indirect
 	golang.org/x/text v0.42.0 // indirect
 )
