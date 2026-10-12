@@ -47,6 +47,7 @@ func init() {
 		tuiCmd,
 		galleryCmd,
 		borderCmd,
+		axisscanCmd,
 	)
 }
 

@@ -19,7 +19,9 @@ import (
 	"io"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
+	"sync"
 	"syscall/js"
 
 	"github.com/0magnet/afero"
@@ -63,6 +65,9 @@ type Options struct {
 	// NoWebGL forces the DOM renderer.
 	NoWebGL bool
 
+	// NoKeyBar withholds the row of Esc, Tab, Ctrl, Alt and arrow keys a
+	// touch screen gets under the terminal (keybar.go).
+	NoKeyBar bool
 	// NoZoom withholds the ctrl-wheel / ctrl-plus / ctrl-0 zoom, which is
 	// otherwise bound on the element the session was given. A page that wants
 	// those gestures to keep zooming the PAGE, or that binds its own because
@@ -120,16 +125,39 @@ type Session struct {
 	Shell  *shell.Shell
 	Editor *shell.LineEditor
 
-	host   string
-	stdinW *io.PipeWriter
-	lines  chan string
+	host  string
+	lines chan string
 
 	running  bool
 	rawInput bool
 
-	// stdinQ carries input to the running command in the order it was typed.
-	// See writeStdin.
-	stdinQ    chan []byte
+	// in is the running command's stdin. See inQueue.
+	in *inQueue
+	// cmds counts the commands run, so something a command started that
+	// finishes after it (a font loading) knows it is too late.
+	cmds int
+	// cooked is the line being typed to a command in cooked mode, held
+	// until Enter as a terminal's line discipline holds it.
+	cooked []rune
+	// setScreenReader turns screen reader mode on or off (a11y.go).
+	setScreenReader func(on bool)
+	// bar is the key bar on a touch screen, or nil (keybar.go).
+	bar *keyBar
+	// fonts is a program's font, while it has one (font.go).
+	fonts fontState
+	// page is the page's title and address before a program changed them,
+	// and the link the page was opened by (page.go).
+	page pageState
+	// mirrorS is the running program's mirror (mirror.go).
+	mirrorS mirrorState
+	// notes, sounds and dropListen: notifications (notify.go), the running
+	// program's sounds (sound.go), and whether it takes drop events (drop.go).
+	notes      notifyState
+	images     imageState
+	sounds     soundState
+	dropListen bool
+	// line is the command line running now.
+	line      string
 	cancelRun context.CancelFunc
 	closed    bool
 
@@ -138,6 +166,7 @@ type Session struct {
 	zoomFns []zoomBinding
 
 	afterCommand func()
+	placements   *placements // what programs laid over the cells (place.go)
 	onExit       func()
 }
 
@@ -177,11 +206,33 @@ func NewSession(el js.Value, opt Options) (*Session, error) {
 	if opt.FontSize > 0 {
 		o.FontSize = opt.FontSize
 	}
+	// Its name for XTVERSION, and the size reports a program may ask for
+	// (cells, and pixels for one drawing pictures to fit them); none of the
+	// window-changing ones.
+	o.XTVersion = "websh"
+	o.WindowOptions.GetWinSizeChars = true
+	o.WindowOptions.GetWinSizePixels = true
+	o.WindowOptions.GetCellSizePixels = true
 	s.Term = xterm.New(o)
-	s.Term.Open(el)
+	// The terminal goes in a box filling el, so something can sit under it
+	// (the key bar) with the terminal fitted above.
+	if el.Get("style").Get("position").String() == "" && js.Global().Call("getComputedStyle", el).Get("position").String() == "static" {
+		el.Get("style").Set("position", "relative")
+	}
+	box := js.Global().Get("document").Call("createElement", "div")
+	box.Get("style").Set("cssText", "position:absolute;top:0;left:0;right:0;bottom:0")
+	el.Call("append", box)
+	s.Term.Open(box)
 	// Watch the container, not the window: mounted in anything smaller than
 	// the page, the window never changes when the terminal's box does.
 	s.Term.AutoFit()
+	s.wireViewer(el)
+	s.wireRemoteEnds()
+	s.wireDrop(el)
+	if !opt.NoKeyBar && touchScreen() {
+		s.wireKeyBar(box)
+	}
+	s.wireA11y(el, box)
 	if !opt.NoWebGL {
 		if err := s.Term.EnableWebGL(); err != nil {
 			js.Global().Get("console").Call("log", "websh: webgl unavailable: "+err.Error())
@@ -191,10 +242,9 @@ func NewSession(el js.Value, opt Options) (*Session, error) {
 		s.wireZoom(el, s.Term.FontSize())
 	}
 
-	stdinR, stdinW := io.Pipe()
-	s.stdinW = stdinW
-
-	sh, err := shell.New(fsys, stdinR, termWriter{s.Term}, termWriter{s.Term}, opt.Env...)
+	s.in = newInQueue()
+	pty := func() bool { return s.Shell != nil && s.remote() }
+	sh, err := shell.New(fsys, s.in, &termWriter{term: s.Term, pty: pty}, &termWriter{term: s.Term, pty: pty}, opt.Env...)
 	if err != nil {
 		s.Term.Dispose()
 		return nil, fmt.Errorf("websh: %w", err)
@@ -228,25 +278,37 @@ func NewSession(el js.Value, opt Options) (*Session, error) {
 	}
 
 	// Full-screen applets take raw bytes and need the size.
-	sh.RawMode = func(on bool) { s.rawInput = on }
+	sh.RawMode = func(on bool) {
+		// What was typed toward a line is the program's once it reads keys.
+		if on && !s.rawInput && len(s.cooked) > 0 {
+			s.writeStdin([]byte(string(s.cooked)))
+			s.cooked = s.cooked[:0]
+		}
+		s.rawInput = on
+	}
 	sh.Exec = opt.Exec
 	sh.Size = func() (int, int) { return s.Term.Core.Cols(), s.Term.Core.Rows() }
-	// An empty write: the pipe hands it to a pending Read as zero bytes.
-	sh.WakeStdin = func() {
-		select {
-		case s.stdinQ <- []byte{}:
-		default:
-		}
+	sh.IsTerminal = func(w io.Writer) bool {
+		tw, ok := w.(*termWriter)
+		return ok && tw.term == s.Term
 	}
+	// A pending Read returns with nothing.
+	sh.WakeStdin = func() { s.in.push(inItem{wake: true}) }
 
 	s.Term.Core.OnData = s.onData
+	s.Term.OnTitleChange = s.setTitle
+	// The terminal's replies are for the program that asked: never for the
+	// line editor, never echoed, and dropped when nothing is running.
+	s.Term.Core.OnReply = func(data string) {
+		if s.running {
+			s.in.push(inItem{b: []byte(data), reply: true})
+		}
+	}
 
 	// Publish the shell -> session pairing, so a full-screen applet can find
 	// the terminal it is running in. See sessionfor.go.
 	registerSession(s)
 
-	s.stdinQ = make(chan []byte, 4096)
-	go s.pumpStdin()
 	go s.run()
 
 	if opt.Greeting != "" {
@@ -292,24 +354,34 @@ func (s *Session) Prompt() string {
 }
 
 // WritePrompt draws the prompt.
-func (s *Session) WritePrompt() { s.Term.WriteString(s.Prompt()) }
+func (s *Session) WritePrompt() {
+	s.osc133("A") // a prompt starts (a11y.go)
+	s.Term.WriteString(s.Prompt())
+	s.osc133("B") // and the command line after it
+}
 
 func (s *Session) onData(data string) {
+	data = s.bar.apply(data) // a latched Ctrl or Alt on a touch screen
 	if s.running {
 		if s.rawInput {
 			// A full-screen applet owns the terminal: raw bytes, no echo,
 			// and Ctrl+C is passed through for it to handle itself.
+			s.interruptTyped(data)
 			s.writeStdin([]byte(data))
 			return
 		}
 		if strings.Contains(data, "\x03") {
+			s.Term.WriteString("^C\r\n")
+			s.cooked = s.cooked[:0]
 			if s.cancelRun != nil {
 				s.cancelRun()
 			}
+			// A command waiting for input does not see its context end
+			// until its read returns: end the read.
+			s.in.push(inItem{interrupt: true})
 			return
 		}
-		s.Term.WriteString(strings.ReplaceAll(data, "\r", "\r\n"))
-		s.writeStdin([]byte(strings.ReplaceAll(data, "\r", "\n")))
+		s.cookedInput(data)
 		return
 	}
 	s.Editor.Input(data)
@@ -363,25 +435,14 @@ func (s *Session) complete(word string, isFirstWord bool) []string {
 // terminal client is the case that cannot tolerate it, because there the order
 // IS the content.
 //
-// One queue, one writer goroutine, so the blocking stays off the JS callback
-// and the sequence is whatever was typed. The buffer is large enough that a
-// person cannot fill it; a full queue drops rather than blocks, because
-// blocking here would freeze the page rather than lose a keystroke.
+// One queue (inQueue), so the sequence is whatever was typed, and adding to
+// it never blocks the JS callback; a full one drops rather than freeze the
+// page.
 func (s *Session) writeStdin(b []byte) {
-	if len(b) == 0 || s.stdinQ == nil {
+	if len(b) == 0 || s.in == nil {
 		return
 	}
-	select {
-	case s.stdinQ <- b:
-	default:
-	}
-}
-
-// pumpStdin is the single writer. It ends when the session closes the queue.
-func (s *Session) pumpStdin() {
-	for b := range s.stdinQ {
-		shell.Write(s.stdinW, b)
-	}
+	s.in.push(inItem{b: b})
 }
 
 // run is the command loop. It is a goroutine so the JS event loop — and so the
@@ -399,9 +460,15 @@ func (s *Session) run() {
 		// background jobs from this context, so `sleep 30 &` survives to the
 		// next prompt as it would in bash.
 		ctx, cancel := context.WithCancel(context.Background())
+		s.in.next() // replies to the last command's queries are not this one's
+		s.cooked = s.cooked[:0]
+		s.cmds++
+		s.line = line
 		s.cancelRun, s.running = cancel, true
 
+		s.osc133("C") // the command's output starts
 		_, err := s.Shell.Run(ctx, line)
+		s.osc133("D;" + strconv.Itoa(exitCode(err)))
 
 		s.running, s.cancelRun = false, nil
 		cancel()
@@ -411,6 +478,9 @@ func (s *Session) run() {
 				s.Term.WriteString(s.host + ": " + strings.ReplaceAll(msg, "\n", "\r\n") + "\r\n")
 			}
 		}
+		// What the command asked the host for goes with it.
+		s.programEnded()
+		s.page.linkLine = "" // a link opens its program once
 		if s.afterCommand != nil {
 			s.afterCommand()
 		}
@@ -441,13 +511,8 @@ func (s *Session) Close() {
 	s.closed = true
 	forgetSession(s)
 	s.releaseZoom()
-	if s.stdinQ != nil {
-		close(s.stdinQ)
-		s.stdinQ = nil
-	}
-	if s.stdinW != nil {
-		// The session is going away; a failed close has no reader to report to.
-		s.stdinW.Close() //nolint:errcheck,gosec
+	if s.in != nil {
+		s.in.close()
 	}
 	close(s.lines)
 	if s.Term != nil {
@@ -455,11 +520,63 @@ func (s *Session) Close() {
 	}
 }
 
-type termWriter struct{ term *xterm.Terminal }
+// termWriter is the shell's stdout or stderr on the terminal.
+//
+// A write may end part way through a character, as a pty's reads do; the
+// rest comes with the next write, so the start is kept for it rather than
+// drawn as replacement characters, which take cells of their own and push the
+// rest of the row along. A cooked terminal's output processing turns a line
+// feed into a new line; a pty's bytes (ssh, mosh, a desktop host's) have had
+// that done on the far side, where a program may also move down a line without
+// going back to its start, so they are drawn as they are.
+type termWriter struct {
+	term interface{ WriteString(string) }
+	pty  func() bool // the output is a pty's
+	mu   sync.Mutex
+	tail []byte // the start of a character the next write ends
+}
 
-func (w termWriter) Write(p []byte) (int, error) {
-	w.term.WriteString(strings.ReplaceAll(string(p), "\n", "\r\n"))
+func (w *termWriter) Write(p []byte) (int, error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	b := append(w.tail, p...)
+	w.tail = nil
+	if cut := partialRune(b); cut > 0 {
+		w.tail = append([]byte(nil), b[len(b)-cut:]...)
+		b = b[:len(b)-cut]
+	}
+	s := string(b)
+	if w.pty == nil || !w.pty() {
+		s = strings.ReplaceAll(s, "\n", "\r\n")
+	}
+	if s != "" {
+		w.term.WriteString(s)
+	}
 	return len(p), nil
+}
+
+// partialRune is how many bytes at the end of b begin a UTF-8 character that
+// is not all there yet.
+func partialRune(b []byte) int {
+	for i := 1; i <= 3 && i <= len(b); i++ {
+		c := b[len(b)-i]
+		if c < 0x80 {
+			return 0 // ASCII ends it: nothing is waiting
+		}
+		if c >= 0xC0 { // a lead byte, and how long its character is
+			need := 2
+			if c >= 0xF0 {
+				need = 4
+			} else if c >= 0xE0 {
+				need = 3
+			}
+			if need > i {
+				return i
+			}
+			return 0
+		}
+	}
+	return 0
 }
 
 // Builtins are the interpreter's own commands, which completion offers
@@ -471,4 +588,73 @@ var Builtins = []string{
 	"continue", "pushd", "popd", "dirs", "let", "getopts", "wait",
 	"jobs", "kill", "disown", "fg", "bg", "enable", "compgen", "history",
 	"builtin", "umask", "times", "trap", "shopt", "mapfile", "readarray",
+}
+
+// echoCtl is what a terminal in cooked mode echoes for data, as a tty with
+// ECHOCTL does: a line ending as a new line, a tab as itself, and any other
+// control character in caret form (^[, ^D) rather than acted on — an arrow
+// key's ESC [ A echoed raw would move the cursor.
+func echoCtl(data string) string {
+	var b strings.Builder
+	for _, r := range data {
+		switch {
+		case r == '\r' || r == '\n':
+			b.WriteString("\r\n")
+		case r == '\t' || r == '\b' || r == 0x7f:
+			b.WriteRune(r)
+		case r < ' ':
+			b.WriteByte('^')
+			b.WriteRune(r + '@')
+		default:
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
+
+// cookedInput is a terminal's line discipline in cooked mode: what is typed
+// is echoed and held until Enter, and then the command gets the line, as a
+// tty in canonical mode gives it — so a command reading its input sees whole
+// lines, and Backspace, Ctrl+U and Ctrl+W edit the line before it does.
+// Ctrl+D ends the input at the start of a line, and otherwise hands over
+// what is there.
+func (s *Session) cookedInput(data string) {
+	var echo strings.Builder
+	for _, r := range data {
+		switch r {
+		case '\r', '\n':
+			echo.WriteString("\r\n")
+			s.writeStdin([]byte(string(s.cooked) + "\n"))
+			s.cooked = s.cooked[:0]
+		case 0x7f, '\b': // erase a character
+			if n := len(s.cooked); n > 0 {
+				s.cooked = s.cooked[:n-1]
+				echo.WriteString("\b \b")
+			}
+		case 0x15: // Ctrl+U: erase the line
+			echo.WriteString(strings.Repeat("\b \b", len(s.cooked)))
+			s.cooked = s.cooked[:0]
+		case 0x17: // Ctrl+W: erase a word
+			n := len(s.cooked)
+			for n > 0 && s.cooked[n-1] == ' ' {
+				n--
+			}
+			for n > 0 && s.cooked[n-1] != ' ' {
+				n--
+			}
+			echo.WriteString(strings.Repeat("\b \b", len(s.cooked)-n))
+			s.cooked = s.cooked[:n]
+		case 0x04: // Ctrl+D
+			if len(s.cooked) == 0 {
+				s.in.push(inItem{interrupt: true}) // the end of the input
+			} else {
+				s.writeStdin([]byte(string(s.cooked)))
+				s.cooked = s.cooked[:0]
+			}
+		default:
+			s.cooked = append(s.cooked, r)
+			echo.WriteString(echoCtl(string(r)))
+		}
+	}
+	s.Term.WriteString(echo.String())
 }
