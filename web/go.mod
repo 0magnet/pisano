@@ -4,11 +4,11 @@ go 1.26.6
 
 require (
 	github.com/0magnet/afero v1.15.1-0.20261003211811-482680d00992
-	github.com/0magnet/desk v0.0.3-0.20261013200513-56751e49eeb8
-	github.com/0magnet/desk/panes v0.0.1-0.20261013200513-56751e49eeb8
-	github.com/0magnet/pisano v0.0.0-20261013200239-6ea899f32442
+	github.com/0magnet/desk v0.0.3-0.20261013213922-eb14de4ec283
+	github.com/0magnet/desk/panes v0.0.1-0.20261013213922-eb14de4ec283
+	github.com/0magnet/pisano v0.0.0-20261013200958-17395cbd7fec
 	github.com/0magnet/sh/v3 v3.13.2-0.20261004194540-aa2d6e4a31a5
-	github.com/0magnet/websh v0.0.1-0.20261013200419-2bbbf0eb075b
+	github.com/0magnet/websh v0.0.1-0.20261013213756-cfd96864be35
 	github.com/charmbracelet/colorprofile v0.4.3
 )
 
@@ -27,7 +27,7 @@ require (
 require (
 	github.com/0magnet/u-root v0.16.1-0.20261003214924-44e47b732754 // indirect
 	github.com/0magnet/winbox-go v0.0.1-0.20261013200318-576b1ad60c9a // indirect
-	github.com/0magnet/xterm-go v0.0.1-0.20261011000522-9adb4a350db6 // indirect
+	github.com/0magnet/xterm-go v0.0.1-0.20261013204947-f189c545bca6 // indirect
 	github.com/benhoyt/goawk v1.32.0 // indirect
 	github.com/charmbracelet/ultraviolet v0.0.0-20261008173134-6b8d4baf91b4 // indirect
 	github.com/charmbracelet/x/ansi v0.11.9 // indirect
