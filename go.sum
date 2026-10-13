@@ -1,9 +1,9 @@
 github.com/0magnet/bubbletea/v2 v2.0.9-0.20261004194435-f5a3ab217440 h1:Q9g9Xi3PjAMq8xauhduTYUup23fmkJRP/p8K6F7bnWg=
 github.com/0magnet/bubbletea/v2 v2.0.9-0.20261004194435-f5a3ab217440/go.mod h1:6Y3G+Ya588WX3I9UKB+nM8Jq3aEgm3udrixlMOJGM9U=
-github.com/0magnet/calvin v0.0.1-0.20261012011430-3b61384c1b9e h1:ovvGqBWD3RC+a/7zrIU5NfXjyB9g88aC9wMdtWiwUqM=
-github.com/0magnet/calvin v0.0.1-0.20261012011430-3b61384c1b9e/go.mod h1:DEQrLzLYals86cMu3dfdh4dUr03iZ49GM9KSmWioTxA=
-github.com/0magnet/coloredcobra v1.0.4-0.20261011230509-d5385cf44398 h1:M3jwYEvNP5nFCKReDX7HCArUOEVqgO+yZgJ00qJGLvc=
-github.com/0magnet/coloredcobra v1.0.4-0.20261011230509-d5385cf44398/go.mod h1:XOyBWsYWPuG3gboQHaOve/ubY8HaTqCGjJ+791sF5cM=
+github.com/0magnet/calvin v0.0.1-0.20261013200157-9f68c20a964b h1:NwY6TUmsN8ck6S+CRcpmdNHULHVTO6WpbVypAuTLug0=
+github.com/0magnet/calvin v0.0.1-0.20261013200157-9f68c20a964b/go.mod h1:d4VzbsL3w6CReFvi3Jbv5V/0U6/BQabOl3feTiuVG7A=
+github.com/0magnet/coloredcobra v1.0.4-0.20261012213101-faa6bd8f94c5 h1:EitsijGOC/B/n+ziuxUBkIy9xhgVnmcDZVOW4eE1xGc=
+github.com/0magnet/coloredcobra v1.0.4-0.20261012213101-faa6bd8f94c5/go.mod h1:XOyBWsYWPuG3gboQHaOve/ubY8HaTqCGjJ+791sF5cM=
 github.com/aymanbagabas/go-udiff v0.2.0 h1:TK0fH4MteXUDspT88n8CKzvK0X9O2xu9yQjWpi6yML8=
 github.com/aymanbagabas/go-udiff v0.2.0/go.mod h1:RE4Ex0qsGkTAJoQdQQCA0uG+nAzJO/pI/QwceO5fgrA=
 github.com/charmbracelet/colorprofile v0.4.3 h1:QPa1IWkYI+AOB+fE+mg/5/4HRMZcaXex9t5KX76i20Q=
