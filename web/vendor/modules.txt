@@ -16,11 +16,11 @@ github.com/0magnet/calvin/clihelp
 # github.com/0magnet/coloredcobra v1.0.4-0.20261012213101-faa6bd8f94c5
 ## explicit; go 1.26.0
 github.com/0magnet/coloredcobra
-# github.com/0magnet/desk v0.0.3-0.20261022102305-cdf1ad6bc4fd
+# github.com/0magnet/desk v0.0.3-0.20261023101853-c9a612c0e021
 ## explicit; go 1.26.6
 github.com/0magnet/desk
 github.com/0magnet/desk/dom
-# github.com/0magnet/desk/panes v0.0.1-0.20261022102305-cdf1ad6bc4fd
+# github.com/0magnet/desk/panes v0.0.1-0.20261023101853-c9a612c0e021
 ## explicit; go 1.26.6
 github.com/0magnet/desk/panes/files
 github.com/0magnet/desk/panes/hostauth
@@ -28,7 +28,7 @@ github.com/0magnet/desk/panes/hostfs
 github.com/0magnet/desk/panes/hostproto
 github.com/0magnet/desk/panes/term
 github.com/0magnet/desk/panes/viewer
-# github.com/0magnet/pisano v0.0.0-20261021102810-fe648b0504b5
+# github.com/0magnet/pisano v0.0.0-20261023101833-85d6c02d99ad
 ## explicit; go 1.26.6
 github.com/0magnet/pisano/cmd/pisano/commands
 github.com/0magnet/pisano/pkg/border
@@ -46,7 +46,7 @@ github.com/0magnet/sh/v3/syntax
 # github.com/0magnet/u-root v0.16.1-0.20261003214924-44e47b732754
 ## explicit; go 1.26.6
 github.com/0magnet/u-root/pkg/ls
-# github.com/0magnet/websh v0.0.1-0.20261021200835-f11c55ad2f6e
+# github.com/0magnet/websh v0.0.1-0.20261023101735-d1b156e77e3e
 ## explicit; go 1.26.6
 github.com/0magnet/websh/progressive
 github.com/0magnet/websh/shell
@@ -72,7 +72,7 @@ github.com/benhoyt/goawk/parser
 # github.com/charmbracelet/colorprofile v0.4.3
 ## explicit; go 1.25.0
 github.com/charmbracelet/colorprofile
-# github.com/charmbracelet/ultraviolet v0.0.0-20261008173134-6b8d4baf91b4
+# github.com/charmbracelet/ultraviolet v0.0.0-20261023060817-a45b7c86333f
 ## explicit; go 1.26.0
 github.com/charmbracelet/ultraviolet
 # github.com/charmbracelet/x/ansi v0.11.9
