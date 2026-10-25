@@ -16,11 +16,11 @@ github.com/0magnet/calvin/clihelp
 # github.com/0magnet/coloredcobra v1.0.4-0.20261012213101-faa6bd8f94c5
 ## explicit; go 1.26.0
 github.com/0magnet/coloredcobra
-# github.com/0magnet/desk v0.0.3-0.20261024094317-7e3566131d94
+# github.com/0magnet/desk v0.0.3-0.20261025095924-584d33b88d02
 ## explicit; go 1.26.6
 github.com/0magnet/desk
 github.com/0magnet/desk/dom
-# github.com/0magnet/desk/panes v0.0.1-0.20261024094317-7e3566131d94
+# github.com/0magnet/desk/panes v0.0.1-0.20261025095924-584d33b88d02
 ## explicit; go 1.26.6
 github.com/0magnet/desk/panes/files
 github.com/0magnet/desk/panes/hostauth
@@ -28,13 +28,13 @@ github.com/0magnet/desk/panes/hostfs
 github.com/0magnet/desk/panes/hostproto
 github.com/0magnet/desk/panes/term
 github.com/0magnet/desk/panes/viewer
-# github.com/0magnet/pisano v0.0.0-20261023102413-aa7ae881293b
+# github.com/0magnet/pisano v0.0.0-20261024094904-a633d7604113
 ## explicit; go 1.26.6
 github.com/0magnet/pisano/cmd/pisano/commands
 github.com/0magnet/pisano/pkg/border
 github.com/0magnet/pisano/pkg/pisano
 github.com/0magnet/pisano/pkg/tui
-# github.com/0magnet/sh/v3 v3.13.2-0.20261004194540-aa2d6e4a31a5
+# github.com/0magnet/sh/v3 v3.13.2-0.20261024150911-145e01c63128
 ## explicit; go 1.26.0
 github.com/0magnet/sh/v3/expand
 github.com/0magnet/sh/v3/fileutil
@@ -46,7 +46,7 @@ github.com/0magnet/sh/v3/syntax
 # github.com/0magnet/u-root v0.16.1-0.20261003214924-44e47b732754
 ## explicit; go 1.26.6
 github.com/0magnet/u-root/pkg/ls
-# github.com/0magnet/websh v0.0.1-0.20261023103035-298f720cd375
+# github.com/0magnet/websh v0.0.1-0.20261024152844-289b63dd4b14
 ## explicit; go 1.26.6
 github.com/0magnet/websh/progressive
 github.com/0magnet/websh/shell
