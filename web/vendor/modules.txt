@@ -16,11 +16,11 @@ github.com/0magnet/calvin/clihelp
 # github.com/0magnet/coloredcobra v1.0.4-0.20261012213101-faa6bd8f94c5
 ## explicit; go 1.26.0
 github.com/0magnet/coloredcobra
-# github.com/0magnet/desk v0.0.3-0.20261025095924-584d33b88d02
+# github.com/0magnet/desk v0.0.3-0.20261026111802-a56114b97dbc
 ## explicit; go 1.26.6
 github.com/0magnet/desk
 github.com/0magnet/desk/dom
-# github.com/0magnet/desk/panes v0.0.1-0.20261025095924-584d33b88d02
+# github.com/0magnet/desk/panes v0.0.1-0.20261026111802-a56114b97dbc
 ## explicit; go 1.26.6
 github.com/0magnet/desk/panes/files
 github.com/0magnet/desk/panes/hostauth
@@ -28,7 +28,7 @@ github.com/0magnet/desk/panes/hostfs
 github.com/0magnet/desk/panes/hostproto
 github.com/0magnet/desk/panes/term
 github.com/0magnet/desk/panes/viewer
-# github.com/0magnet/pisano v0.0.0-20261024094904-a633d7604113
+# github.com/0magnet/pisano v0.0.0-20261025100437-d31fc94f3829
 ## explicit; go 1.26.6
 github.com/0magnet/pisano/cmd/pisano/commands
 github.com/0magnet/pisano/pkg/border
