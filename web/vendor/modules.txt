@@ -16,11 +16,11 @@ github.com/0magnet/calvin/clihelp
 # github.com/0magnet/coloredcobra v1.0.4-0.20261012213101-faa6bd8f94c5
 ## explicit; go 1.26.0
 github.com/0magnet/coloredcobra
-# github.com/0magnet/desk v0.0.3-0.20261031110505-95ae1a6c1b74
+# github.com/0magnet/desk v0.0.3-0.20261101120219-2ac1578c28cd
 ## explicit; go 1.26.6
 github.com/0magnet/desk
 github.com/0magnet/desk/dom
-# github.com/0magnet/desk/panes v0.0.1-0.20261031110505-95ae1a6c1b74
+# github.com/0magnet/desk/panes v0.0.1-0.20261101120219-2ac1578c28cd
 ## explicit; go 1.26.6
 github.com/0magnet/desk/panes/files
 github.com/0magnet/desk/panes/hostauth
@@ -28,7 +28,7 @@ github.com/0magnet/desk/panes/hostfs
 github.com/0magnet/desk/panes/hostproto
 github.com/0magnet/desk/panes/term
 github.com/0magnet/desk/panes/viewer
-# github.com/0magnet/pisano v0.0.0-20261030113825-7da0aafedfb8
+# github.com/0magnet/pisano v0.0.0-20261031111000-7de7b9256c50
 ## explicit; go 1.26.6
 github.com/0magnet/pisano/cmd/pisano/commands
 github.com/0magnet/pisano/pkg/border
@@ -104,7 +104,7 @@ github.com/fatih/color
 # github.com/inconshreveable/mousetrap v1.1.0
 ## explicit; go 1.18
 github.com/inconshreveable/mousetrap
-# github.com/itchyny/gojq v0.12.19
+# github.com/itchyny/gojq v0.12.20
 ## explicit; go 1.24.0
 github.com/itchyny/gojq
 # github.com/itchyny/timefmt-go v0.1.9
