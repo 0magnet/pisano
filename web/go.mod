@@ -4,11 +4,11 @@ go 1.26.6
 
 require (
 	github.com/0magnet/afero v1.15.1-0.20261003211811-482680d00992
-	github.com/0magnet/desk v0.0.3-0.20261104131123-0146173cce90
-	github.com/0magnet/desk/panes v0.0.1-0.20261104131123-0146173cce90
-	github.com/0magnet/pisano v0.0.0-20261103130616-e7bcc0f1d05b
+	github.com/0magnet/desk v0.0.3-0.20261105132454-f15a8c2b0abb
+	github.com/0magnet/desk/panes v0.0.1-0.20261105132454-f15a8c2b0abb
+	github.com/0magnet/pisano v0.0.0-20261105132411-db57ebd37122
 	github.com/0magnet/sh/v3 v3.13.2-0.20261024150911-145e01c63128
-	github.com/0magnet/websh v0.0.1-0.20261104023937-24105bd23c12
+	github.com/0magnet/websh v0.0.1-0.20261105132335-53fe5dca2fec
 	github.com/charmbracelet/colorprofile v0.4.3
 )
 
@@ -53,7 +53,7 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/spf13/cobra v1.10.2 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
-	github.com/xo/terminfo v1.3.0 // indirect
+	github.com/xo/terminfo v1.3.1 // indirect
 	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/term v0.47.0 // indirect
