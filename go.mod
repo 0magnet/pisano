@@ -9,7 +9,7 @@ require (
 
 require (
 	github.com/0magnet/bubbletea/v2 v2.0.9-0.20261004194435-f5a3ab217440
-	github.com/0magnet/calvin v0.0.1-0.20261106130306-95511d0b3e30
+	github.com/0magnet/calvin v0.0.1-0.20261109140133-887794fc87eb
 )
 
 require (
@@ -40,6 +40,6 @@ require (
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/xo/terminfo v1.3.1 // indirect
-	golang.org/x/sync v0.24.0 // indirect
-	golang.org/x/sys v0.49.0 // indirect
+	golang.org/x/sync v0.25.0 // indirect
+	golang.org/x/sys v0.50.0 // indirect
 )
