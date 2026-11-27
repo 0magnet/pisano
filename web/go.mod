@@ -4,11 +4,11 @@ go 1.26.6
 
 require (
 	github.com/0magnet/afero v1.15.1-0.20261003211811-482680d00992
-	github.com/0magnet/desk v0.0.3-0.20261126153416-9ec0c5cb8e67
-	github.com/0magnet/desk/panes v0.0.1-0.20261126153416-9ec0c5cb8e67
-	github.com/0magnet/pisano v0.0.0-20261126153302-ae922f28cb23
+	github.com/0magnet/desk v0.0.3-0.20261127152233-ad28384f67c8
+	github.com/0magnet/desk/panes v0.0.1-0.20261127152233-ad28384f67c8
+	github.com/0magnet/pisano v0.0.0-20261126154144-2c4305c8d01b
 	github.com/0magnet/sh/v3 v3.13.2-0.20261024150911-145e01c63128
-	github.com/0magnet/websh v0.0.1-0.20261126153202-8e5238d70cff
+	github.com/0magnet/websh v0.0.1-0.20261127151940-35cc3448b035
 	github.com/charmbracelet/colorprofile v0.4.3
 )
 
@@ -18,7 +18,7 @@ require (
 )
 
 require (
-	github.com/0magnet/bottle v0.0.1-0.20261028202309-2b922f28f74e // indirect
+	github.com/0magnet/bottle v0.0.1-0.20261127013808-02b522ecff04 // indirect
 	github.com/0magnet/coloredcobra v1.0.4-0.20261012213101-faa6bd8f94c5 // indirect
 	github.com/fatih/color v1.19.0 // indirect
 	github.com/mattn/go-colorable v0.1.16 // indirect
