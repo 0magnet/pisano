@@ -4,11 +4,11 @@ go 1.26.6
 
 require (
 	github.com/0magnet/afero v1.15.1-0.20261003211811-482680d00992
-	github.com/0magnet/desk v0.0.3-0.20261127152233-ad28384f67c8
-	github.com/0magnet/desk/panes v0.0.1-0.20261127152233-ad28384f67c8
-	github.com/0magnet/pisano v0.0.0-20261126154144-2c4305c8d01b
+	github.com/0magnet/desk v0.0.3-0.20261128142538-b2b6253d6505
+	github.com/0magnet/desk/panes v0.0.1-0.20261128142538-b2b6253d6505
+	github.com/0magnet/pisano v0.0.0-20261127152908-1fb3ca5c4a2d
 	github.com/0magnet/sh/v3 v3.13.2-0.20261024150911-145e01c63128
-	github.com/0magnet/websh v0.0.1-0.20261127151940-35cc3448b035
+	github.com/0magnet/websh v0.0.1-0.20261127152643-e0ef78b89e16
 	github.com/charmbracelet/colorprofile v0.4.3
 )
 
